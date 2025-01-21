@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgis/postgis:latest
+    ports:
+      - "5431:5431"
+    restart: always
+    environment:
+      - POSTGRES_USER=alpinist
+      - POSTGRES_PASSWORD=secret
+    command: ["postgres", "-c", "port=5431"]
+    volumes:
+      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
+

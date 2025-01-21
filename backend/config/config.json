@@ -1,0 +1,20 @@
+{
+  "files" : {
+    "static" : {
+      "root" : "/home/cristian/GolandProjects/geo-wiki/frontend/dist/assets",
+      "index" : "/home/cristian/GolandProjects/geo-wiki/frontend/dist/index.html"
+    }
+  },
+  "databases" : {
+    "alpinist" : {
+      "connection" : {
+        "host" : "localhost",
+        "dbname" : "alpinist",
+        "user" : "alpinist",
+        "password" : "secret",
+        "port" : "5431",
+        "ssl" : "disable"
+      }
+    }
+  }
+}
