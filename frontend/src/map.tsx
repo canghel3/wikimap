@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Popup, CircleMarker, useMap } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 
@@ -14,7 +14,7 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void }> = (
     const map = useMap(); // access the current map instance
 
     const fetchWikipediaPages = async () => {
-        const center = map.getCenter(); // get map center coordinates
+        const center = map.getCenter();
         const url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${center.lat}|${center.lng}&gsradius=10000&gslimit=100&format=json&origin=*`;
 
         try {
@@ -44,9 +44,8 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void }> = (
             onClick={fetchWikipediaPages}
             style={{
                 position: "absolute",
-                top: "10px",
-                left: "10px",
-                marginLeft: "50%",
+                top: "5%",
+                left: "50%",
                 padding: "10px 20px",
                 backgroundColor: "transparent",
                 color: "black",
@@ -63,10 +62,23 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void }> = (
 
 const Map: React.FC = () => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
+    const [userLocation, setUserLocation] = useState<number[]>([0, 0]);
+
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                setUserLocation([position.coords.latitude, position.coords.longitude])
+                console.log(position.coords);
+            })
+        } else {
+            console.log("Geolocation is not supported")
+        }
+    }, [])
 
     return (
         <div style={{ height: "100%", width:"100%"}}>
-            <MapContainer center={[0, 0]} zoom={5} style={{ height: "100%", width: "100%" }}>
+            <MapContainer key={userLocation.toString()} center={[userLocation[0], userLocation[1]]} zoom={6} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
