@@ -100,6 +100,7 @@ const Map: React.FC = () => {
 
                 <FindNearbyPages setMarkers={setWikiMarkers} />
             </MapContainer>
+
         </div>
     );
 };
