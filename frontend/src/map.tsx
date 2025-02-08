@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Popup, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Tooltip, CircleMarker, useMap } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import {LatLng} from "leaflet";
 
 // Define a type for Wikipedia pages
 interface WikiPage {
-    radius: number;
+    views: number;
     pageid: number;
     title: string;
     lat: number;
@@ -22,11 +22,17 @@ interface PageViewsResponse {
     };
 }
 
-const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void }> = ({ setMarkers }) => {
+const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoomBegin : number}> = ({ setMarkers, zoomBegin }) => {
     const map = useMap(); // access the current map instance
 
     const fetchWikipediaPages = async () => {
         try {
+            const zoom = map.getZoom();
+            if (zoom < zoomBegin) {
+                alert("zoom in to search pages.")
+                return;
+            }
+
             const center: LatLng = map.getCenter();
             const url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${center.lat}|${center.lng}&gsradius=10000&gslimit=100&format=json&origin=*`;
 
@@ -64,16 +70,6 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void }> = (
 
                 const pageViewsData: PageViewsResponse = await pageViewsResponse.json();
 
-                const getPageRadius = (min: number, max: number, views: number) : number => {
-                    let scaled: number = (views - min) / (max - min);
-                    const lowest = 5;
-                    const highest = 100;
-                    if (scaled < lowest) return lowest;
-                    if (scaled > highest) return highest;
-
-                   return scaled;
-                }
-
                 const getPageViews = (data: PageViewsResponse) => {
                     if (!data?.query?.pages) return;
 
@@ -102,10 +98,9 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void }> = (
                         }
 
                         let element = pages.find((p) => p.pageid.toString() == pageId);
-                        let radius = getPageRadius(min, max, totalViews);
-                        console.log(`setting at ${pages[i].lat} - ${pages[i].lon} radius ${radius}` );
+                        console.log(`setting at ${pages[i].lat} - ${pages[i].lon} views ${totalViews}` );
                         let item : WikiPage = {
-                            radius: radius,
+                            views: totalViews,
                             pageid : element!.pageid,
                             lat: element!.lat,
                             lon: element!.lon,
@@ -225,7 +220,7 @@ const Map: React.FC = () => {
 
                 {wikiMarkers.map((page) => (
                     <CircleMarker key={page.pageid}
-                                  radius={page.radius ?? 5}
+                                  radius={5}
                                   center={[page.lat, page.lon]}
                                   eventHandlers={{
                                       click: () => {
@@ -234,10 +229,16 @@ const Map: React.FC = () => {
                                           setIframeVisibility(true);
                                       }
                                   }}>
+                        {
+                            page.views && (
+                                <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
+                                    {page.views}
+                                </Tooltip>
+                        )}
                     </CircleMarker>
                 ))}
 
-                <FindNearbyPages setMarkers={setWikiMarkers} />
+                <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={8}/>
             </MapContainer>
 
         </div>
