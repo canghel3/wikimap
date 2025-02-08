@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Tooltip, CircleMarker, useMap } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
+import 'react-leaflet-markercluster/styles'
 import {LatLng} from "leaflet";
+import MarkerClusterGroup from "react-leaflet-markercluster";
 
 // Define a type for Wikipedia pages
 interface WikiPage {
@@ -22,7 +24,7 @@ interface PageViewsResponse {
     };
 }
 
-const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoomBegin : number}> = ({ setMarkers, zoomBegin }) => {
+const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoomBegin : number}> = ({ setMarkers, zoomBegin = 15 }) => {
     const map = useMap(); // access the current map instance
 
     const fetchWikipediaPages = async () => {
@@ -218,25 +220,27 @@ const Map: React.FC = () => {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
 
-                {wikiMarkers.map((page) => (
-                    <CircleMarker key={page.pageid}
-                                  radius={5}
-                                  center={[page.lat, page.lon]}
-                                  eventHandlers={{
-                                      click: () => {
-                                          console.log("clicked", page.pageid);
-                                          setPageUrl(`https://en.wikipedia.org/?curid=${page.pageid}`);
-                                          setIframeVisibility(true);
-                                      }
-                                  }}>
-                        {
-                            page.views && (
-                                <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
-                                    {page.views}
-                                </Tooltip>
-                        )}
-                    </CircleMarker>
-                ))}
+                <MarkerClusterGroup>
+                    {wikiMarkers.map((page) => (
+                        <CircleMarker key={page.pageid}
+                                      radius={5}
+                                      center={[page.lat, page.lon]}
+                                      eventHandlers={{
+                                          click: () => {
+                                              console.log("clicked", page.pageid);
+                                              setPageUrl(`https://en.wikipedia.org/?curid=${page.pageid}`);
+                                              setIframeVisibility(true);
+                                          }
+                                      }}>
+                            {
+                                page.views && (
+                                    <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
+                                        {page.views}
+                                    </Tooltip>
+                            )}
+                        </CircleMarker>
+                    ))}
+                </MarkerClusterGroup>
 
                 <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={8}/>
             </MapContainer>
