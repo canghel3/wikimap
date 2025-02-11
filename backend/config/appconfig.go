@@ -1,7 +1,9 @@
 package config
 
 type AppConfiguration struct {
-	Files     FilesConfig               `mapstructure:"files"`
+	MediaWiki MediaWikiConfig           `mapstructure:"mediawiki"`
+	Server    ServerConfig              `mapstructure:"server"`
+	Files     FileConfig                `mapstructure:"files"`
 	Databases map[string]DatabaseConfig `mapstructure:"databases"`
 }
 

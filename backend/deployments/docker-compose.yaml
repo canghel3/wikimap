@@ -1,13 +1,13 @@
+version: '3.8'
+
 services:
-  postgres:
+  postgis:
     image: postgis/postgis:latest
-    ports:
-      - "5431:5431"
+    container_name: geowiki_db
     restart: always
     environment:
-      - POSTGRES_USER=alpinist
-      - POSTGRES_PASSWORD=secret
-    command: ["postgres", "-c", "port=5431"]
-    volumes:
-      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
-
+    - POSTGRES_DB=geowiki
+    - POSTGRES_USER=geowiki
+    - POSTGRES_PASSWORD=secret
+    ports:
+      - "25432:5432"

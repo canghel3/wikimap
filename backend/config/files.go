@@ -1,6 +1,6 @@
 package config
 
-type FilesConfig struct {
+type FileConfig struct {
 	Static StaticFileConfig `mapstructure:"static"`
 }
 

@@ -1,4 +1,10 @@
 {
+  "mediawiki" : {
+    "url" : ""
+  },
+  "server" : {
+    "port" : "9876"
+  },
   "files" : {
     "static" : {
       "root" : "/home/cristian/GolandProjects/geo-wiki/frontend/dist/assets",
@@ -6,13 +12,13 @@
     }
   },
   "databases" : {
-    "alpinist" : {
+    "geowiki" : {
       "connection" : {
         "host" : "localhost",
-        "dbname" : "alpinist",
-        "user" : "alpinist",
+        "dbname" : "geowiki",
+        "user" : "geowiki",
         "password" : "secret",
-        "port" : "5431",
+        "port" : "5432",
         "ssl" : "disable"
       }
     }

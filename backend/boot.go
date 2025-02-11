@@ -12,7 +12,7 @@ func initConfig() {
 	viper.AddConfigPath("./config")
 	viper.SetConfigName("config")
 
-	viper.SetEnvPrefix("munte")
+	viper.SetEnvPrefix("geowiki")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
