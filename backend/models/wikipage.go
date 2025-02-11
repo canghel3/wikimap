@@ -13,19 +13,15 @@ type WikiPageSearchResponse struct {
 }
 
 type Query struct {
-	Pages map[string]Page `json:"pages"`
+	Geosearch []Geosearch `json:"geosearch"`
 }
 
-type Page struct {
-	PageID      int          `json:"pageid"`
-	Ns          int          `json:"ns"`
-	Title       string       `json:"title"`
-	Coordinates []Coordinate `json:"coordinates"`
-}
-
-type Coordinate struct {
+type Geosearch struct {
+	PageID  int     `json:"pageid"`
+	NS      int     `json:"ns"`
+	Title   string  `json:"title"`
 	Lat     float64 `json:"lat"`
 	Lon     float64 `json:"lon"`
+	Dist    float64 `json:"dist"`
 	Primary string  `json:"primary"`
-	Globe   string  `json:"globe"`
 }

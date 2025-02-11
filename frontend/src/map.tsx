@@ -35,14 +35,21 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
                 return;
             }
 
-            const center: LatLng = map.getCenter();
-            const url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${center.lat}|${center.lng}&gsradius=10000&gslimit=100&format=json&origin=*`;
+            const bounds = map.getBounds()
+            const bbox = [
+                bounds.getNorthEast().lat, // maxLat (North)
+                bounds.getSouthWest().lng, // minLon (West)
+                bounds.getSouthWest().lat, // minLat (South)
+                bounds.getNorthEast().lng  // maxLon (East)
+            ].join('|');
+
+            const url = `http://localhost:9876/api/v1/points?bbox=${bbox}`;
 
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
 
             const data = await response.json();
-            const pages: WikiPage[] = data.query.geosearch.map((page: any) => ({
+            const pages: WikiPage[] = data.map((page: any) => ({
                 pageid: page.pageid,
                 title: page.title,
                 lat: page.lat,
@@ -51,7 +58,7 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
 
             setMarkers(pages);
 
-            await updatePageRankings(pages);
+            // await updatePageRankings(pages);
         } catch (error) {
             console.error("Failed to fetch Wikipedia pages:", error);
         }
@@ -242,7 +249,7 @@ const Map: React.FC = () => {
                     ))}
                 </MarkerClusterGroup>
 
-                <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={8}/>
+                <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
             </MapContainer>
 
         </div>

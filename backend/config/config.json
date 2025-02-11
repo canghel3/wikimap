@@ -1,9 +1,9 @@
 {
   "mediawiki" : {
-    "url" : ""
+    "url" : "https://en.wikipedia.org/w/api.php"
   },
   "server" : {
-    "port" : "9876"
+    "port" : ":9876"
   },
   "files" : {
     "static" : {

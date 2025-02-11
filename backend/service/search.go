@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/canghel3/geo-wiki/config"
 	"github.com/canghel3/geo-wiki/models"
 	"io"
 	"net/http"
@@ -21,10 +22,10 @@ type MediaWikiService struct {
 }
 
 // TODO: implement options for url, client etc
-func MediaWikiAPI() *MediaWikiService {
+func NewMediaWikiAPI() *MediaWikiService {
 	mws := &MediaWikiService{
 		client: http.DefaultClient,
-		url:    "", //TODO: use config
+		url:    config.AppConfig.MediaWiki.URL,
 	}
 
 	return mws
@@ -41,6 +42,7 @@ func (mws *MediaWikiService) SearchWikiPages(bbox string) ([]models.WikiPage, er
 	q.Add("list", "geosearch")
 	q.Add("gsbbox", bbox)
 	q.Add("gslimit", "500")
+	q.Add("format", "json")
 
 	request.URL.RawQuery = q.Encode()
 
@@ -64,20 +66,13 @@ func (mws *MediaWikiService) SearchWikiPages(bbox string) ([]models.WikiPage, er
 		}
 
 		var pages []models.WikiPage
-		for _, page := range searchResponse.Query.Pages {
-			wikiPage := models.WikiPage{
+		for _, page := range searchResponse.Query.Geosearch {
+			pages = append(pages, models.WikiPage{
 				ID:    strconv.Itoa(page.PageID),
 				Title: page.Title,
-				Lat:   0,
-				Lon:   0,
-			}
-
-			if len(page.Coordinates) > 0 {
-				wikiPage.Lon = page.Coordinates[0].Lon
-				wikiPage.Lat = page.Coordinates[0].Lat
-			}
-
-			pages = append(pages, wikiPage)
+				Lat:   page.Lat,
+				Lon:   page.Lon,
+			})
 		}
 
 		return pages, nil

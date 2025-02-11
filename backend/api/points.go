@@ -2,20 +2,31 @@ package api
 
 import (
 	"errors"
+	"github.com/Ginger955/telemetry/log"
+	"github.com/canghel3/geo-wiki/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func getPoints() func(c *gin.Context) {
+func getPoints(mediaWikiService *service.MediaWikiService) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		bbox, err := parseBBOXQuery(c.Query("bbox"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		bbox := c.Query("bbox")
+		if len(strings.Split(bbox, "|")) != 4 {
+			log.Stdout().Error().Logf("bbox format error: %s", bbox)
+			c.JSON(http.StatusBadRequest, gin.H{"message": "bbox format error"})
 			return
 		}
 
+		pages, err := mediaWikiService.SearchWikiPages(bbox)
+		if err != nil {
+			log.Stdout().Error().Logf("error searching wiki pages: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error searching wiki pages"})
+			return
+		}
+
+		c.JSON(http.StatusOK, pages)
 	}
 }
 

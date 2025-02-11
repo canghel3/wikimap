@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/Ginger955/telemetry/log"
 	"github.com/canghel3/geo-wiki/config"
+	"github.com/canghel3/geo-wiki/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,10 +29,12 @@ func Run() error {
 		c.File(configuration.Files.Static.Index)
 	})
 
+	mediaWikiService := service.NewMediaWikiAPI()
+
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(gin.Logger(), gin.Recovery())
 	{
-		apiV1.GET("/points", getPoints())
+		apiV1.GET("/points", getPoints(mediaWikiService))
 	}
 
 	// start the server
