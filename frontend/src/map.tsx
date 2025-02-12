@@ -8,33 +8,34 @@ import MarkerClusterGroup from "react-leaflet-markercluster";
 // Define a type for Wikipedia pages
 interface WikiPage {
     views: number;
-    pageid: number;
+    pageid: string;
     title: string;
     lat: number;
     lon: number;
 }
 
 interface PageViewsResponse {
-    query: {
-        pages: {
-            [pageId: string]: {
-                pageviews?: { [date: string]: number | null };
-            };
-        };
-    };
+    [pageId: string]: number | null;
+    // query: {
+    //     pages: {
+    //         [pageId: string]: {
+    //             pageviews?: { [date: string]: number | null };
+    //         };
+    //     };
+    // };
 }
 
 const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoomBegin : number}> = ({ setMarkers, zoomBegin = 15 }) => {
     const map = useMap(); // access the current map instance
 
     const fetchWikipediaPages = async () => {
-        try {
-            const zoom = map.getZoom();
-            if (zoom < zoomBegin) {
-                alert("zoom in to search pages.")
-                return;
-            }
+        const zoom = map.getZoom();
+        if (zoom < zoomBegin) {
+            alert("zoom in to search pages.")
+            return;
+        }
 
+        try {
             const bounds = map.getBounds()
             const bbox = [
                 bounds.getNorthEast().lat, // maxLat (North)
@@ -43,7 +44,7 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
                 bounds.getNorthEast().lng  // maxLon (East)
             ].join('|');
 
-            const url = `http://localhost:9876/api/v1/points?bbox=${bbox}`;
+            const url = `http://localhost:9876/api/v1/pages?bbox=${bbox}`;
 
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -56,82 +57,53 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
                 lon: page.lon,
             }));
 
+            console.log("pages without views\n", pages);
+
             setMarkers(pages);
 
-            // await updatePageRankings(pages);
+            const pagesWithViews = await getPageViews(pages);
+
+            console.log("pages with views\n", pagesWithViews);
+
+            setMarkers(pagesWithViews);
         } catch (error) {
             console.error("Failed to fetch Wikipedia pages:", error);
         }
     };
 
-    const updatePageRankings = async (pages: WikiPage[], batchSize = 15) => {
+    const getPageViews = async (pages: WikiPage[]) : Promise<WikiPage[]> => {
         try {
-            let newPages : WikiPage[] = [];
-            for (let i = 0; i < pages.length; i += batchSize) {
-                const batch = pages.slice(i, i + batchSize);
-                const pageIdsQueryParam = batch.map(page => page.pageid).join("|");
 
-                console.log("Fetching page views for IDs:", pageIdsQueryParam);
+            console.log("before", pages)
+            let ids : string[] = [];
+            pages.forEach((value, index, array) => {
+                console.log(value, index);
+                ids.push(value.pageid);
+            });
 
-                const pageViewsUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageviews&pageids=${pageIdsQueryParam}&format=json&origin=*`;
-                const pageViewsResponse = await fetch(pageViewsUrl);
-                if (!pageViewsResponse.ok) throw new Error(`Error: ${pageViewsResponse.status} ${pageViewsResponse.statusText}`);
+            console.log("views 1", pages);
+            console.log("views 2", ids.join(","));
+            const url = `http://localhost:9876/api/v1/pages/views?ids=${ids.join(",")}`;
 
-                const pageViewsData: PageViewsResponse = await pageViewsResponse.json();
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
 
-                const getPageViews = (data: PageViewsResponse) => {
-                    if (!data?.query?.pages) return;
+            const data = await response.json();
+            Object.keys(data).forEach(key => {
+                let index = pages.findIndex(page => page.pageid.toString() === key)
+                if (index > -1 && index < pages.length) {
+                    let page = pages[index];
+                    page.views = data[key];
+                    pages[index] = page;
+                }
+            });
 
-                    for (const pageId in data.query.pages) {
-                        const pageCounts = data.query.pages[pageId];
-
-                        let totalViews = 0;
-                        let min = 0;
-                        let max = 0;
-
-                        if (pageCounts.pageviews) {
-                            for (const date in pageCounts.pageviews) {
-                                const views = pageCounts.pageviews[date];
-                                if (typeof views === "number") {
-                                    if (views < min) {
-                                        min = views;
-                                    }
-
-                                    if (views > max) {
-                                        max = views;
-                                    }
-
-                                    totalViews += views;
-                                }
-                            }
-                        }
-
-                        let element = pages.find((p) => p.pageid.toString() == pageId);
-                        console.log(`setting at ${pages[i].lat} - ${pages[i].lon} views ${totalViews}` );
-                        let item : WikiPage = {
-                            views: totalViews,
-                            pageid : element!.pageid,
-                            lat: element!.lat,
-                            lon: element!.lon,
-                            title: element!.title
-                        }
-
-                        newPages.push(item);
-                    }
-                };
-
-                getPageViews(pageViewsData)
-                // break;
-
-                console.log("Page Views Data:", pageViewsData);
-            }
-
-            setMarkers(newPages);
+            return pages;
         } catch (error) {
-            console.error("Failed to fetch page views:", error);
+            console.error("failed to get wiki page views:", error);
+            return pages;
         }
-    };
-
+    }
 
     return (
         <button

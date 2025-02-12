@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func getPoints(mediaWikiService *service.MediaWikiService) func(c *gin.Context) {
+func getPagesWithinBounds(mediaWikiService *service.MediaWikiService) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		bbox := c.Query("bbox")
 		if len(strings.Split(bbox, "|")) != 4 {
@@ -27,6 +27,26 @@ func getPoints(mediaWikiService *service.MediaWikiService) func(c *gin.Context) 
 		}
 
 		c.JSON(http.StatusOK, pages)
+	}
+}
+
+func getPagesViews(mediaWikiService *service.MediaWikiService) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		ids := strings.Split(c.Query("ids"), ",")
+		if len(ids) < 1 {
+			log.Stdout().Error().Logf("id format error: %s", c.Query("ids"))
+			c.JSON(http.StatusBadRequest, gin.H{"message": "id format error"})
+			return
+		}
+
+		views, err := mediaWikiService.GetViews(ids...)
+		if err != nil {
+			log.Stdout().Error().Logf("error getting views: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error getting views"})
+			return
+		}
+
+		c.JSON(http.StatusOK, views)
 	}
 }
 
