@@ -1,0 +1,19 @@
+.iframe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: white;
+    width: 35%;
+    height: 100%;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.iframe.hidden {
+    transform: translateX(-100%); /* Slide out */
+}
+
+.iframe.visible {
+    transform: translateX(0); /* Slide in */
+}

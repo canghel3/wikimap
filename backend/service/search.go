@@ -35,8 +35,6 @@ func NewMediaWikiAPI() *MediaWikiService {
 	return mws
 }
 
-//TODO: implement GetViews with models.WikiPages parameter
-
 func (mws *MediaWikiService) GetViews(pageids ...string) (models.WikiPageViews, error) {
 	var pagesWithViews = make(models.WikiPageViews)
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {useState, useEffect, useRef, useCallback, useMemo, RefObject} from "react";
 import { MapContainer, TileLayer, Tooltip, CircleMarker, useMap } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import 'react-leaflet-markercluster/styles'
+import './styles/wikipage-frame.css'
 import {LatLng} from "leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 
@@ -57,13 +58,9 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
                 lon: page.lon,
             }));
 
-            console.log("pages without views\n", pages);
-
             setMarkers(pages);
 
             const pagesWithViews = await getPageViews(pages);
-
-            console.log("pages with views\n", pagesWithViews);
 
             setMarkers(pagesWithViews);
         } catch (error) {
@@ -73,32 +70,19 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
 
     const getPageViews = async (pages: WikiPage[]) : Promise<WikiPage[]> => {
         try {
-
-            console.log("before", pages)
-            let ids : string[] = [];
-            pages.forEach((value, index, array) => {
-                console.log(value, index);
-                ids.push(value.pageid);
-            });
-
-            console.log("views 1", pages);
-            console.log("views 2", ids.join(","));
+            let ids : string[] = pages.map(page => page.pageid);
             const url = `http://localhost:9876/api/v1/pages/views?ids=${ids.join(",")}`;
 
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
 
             const data = await response.json();
-            Object.keys(data).forEach(key => {
-                let index = pages.findIndex(page => page.pageid.toString() === key)
-                if (index > -1 && index < pages.length) {
-                    let page = pages[index];
-                    page.views = data[key];
-                    pages[index] = page;
-                }
-            });
+            const updatePages = pages.map(page => ({
+                ...page,
+                views : data[page.pageid] || 0,
+            }));
 
-            return pages;
+            return updatePages;
         } catch (error) {
             console.error("failed to get wiki page views:", error);
             return pages;
@@ -129,10 +113,12 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
 const Map: React.FC = () => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
     const [userLocation, setUserLocation] = useState<number[]>([0, 0]);
-    const [pageUrl, setPageUrl] = useState<string | null>(null);
-    let [iframeVisibility, setIframeVisibility] = useState<boolean>(false);
+    const pageUrl = useRef<string | null>(null);
+    const iframeVisibility = useRef(false);
 
     const popupRef = useRef<HTMLDivElement>(null);
+
+    const memoizedMarkers = useMemo(() => wikiMarkers, [wikiMarkers]);
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -147,9 +133,30 @@ const Map: React.FC = () => {
 
     const handleClickOutside = (event: MouseEvent) => {
         if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-            setIframeVisibility(false);
+            iframeVisibility.current = false;
+            pageUrl.current = null;
+
+            popupRef.current?.classList.remove("visible");
+            popupRef.current?.classList.add("hidden");
         }
     };
+
+    const handleMarkerClick = useCallback((page: WikiPage) => {
+        console.log("clicked", page.pageid);
+        const newUrl = `https://en.wikipedia.org/?curid=${page.pageid}`;
+
+        if (popupRef.current) {
+            const iframe = popupRef.current.querySelector("iframe");
+            if (iframe) {
+                iframe.src = newUrl;  // manually update the iframe src
+            }
+        }
+
+        iframeVisibility.current = true;
+        popupRef.current?.classList.remove("hidden");
+        popupRef.current?.classList.add("visible");
+    }, []); // empty dependency array ensures the function reference doesn't change
+
 
     useEffect(() => {
         if (iframeVisibility) {
@@ -157,41 +164,11 @@ const Map: React.FC = () => {
         } else {
             document.removeEventListener("mousedown", handleClickOutside);
         }
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
     }, [iframeVisibility]);
 
     return (
         <div style={{ height: "100%", width:"100%"}}>
-            {iframeVisibility && (<div
-                ref={popupRef}
-                style={{
-                    position: "fixed",
-                    top: "0%",
-                    left: "0%",
-                    backgroundColor: "white",
-                    padding: "20px",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
-                    zIndex: 1000,
-                    width: "35%",
-                    height: "100%",
-                    overflowY: "auto",
-                }}
-            >
-                <iframe
-
-                    src={pageUrl!}
-                    title="Wikipedia Page"
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        border: "none",
-                        borderRadius: "8px",
-                    }}
-                />
-            </div>)}
+            {<IframePopup pageUrl={pageUrl} iFrameRef={popupRef} />}
 
             <MapContainer key={userLocation.toString()} center={[userLocation[0], userLocation[1]]} zoom={6} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
@@ -200,15 +177,13 @@ const Map: React.FC = () => {
                 />
 
                 <MarkerClusterGroup>
-                    {wikiMarkers.map((page) => (
+                    {memoizedMarkers.map((page) => (
                         <CircleMarker key={page.pageid}
                                       radius={5}
                                       center={[page.lat, page.lon]}
                                       eventHandlers={{
                                           click: () => {
-                                              console.log("clicked", page.pageid);
-                                              setPageUrl(`https://en.wikipedia.org/?curid=${page.pageid}`);
-                                              setIframeVisibility(true);
+                                              handleMarkerClick(page)
                                           }
                                       }}>
                             {
@@ -227,5 +202,14 @@ const Map: React.FC = () => {
         </div>
     );
 };
+
+const IframePopup: React.FC<{ pageUrl: RefObject<string | null>, iFrameRef : React.Ref<HTMLDivElement> }> = ({ pageUrl, iFrameRef}) => {
+    return (
+        <div ref={iFrameRef} className={`iframe hidden`}>
+            <iframe src={pageUrl.current!} title="Wikipedia Page" style={{ width: "100%", height: "100%" }} />
+        </div>
+    );
+};
+
 
 export default Map;
