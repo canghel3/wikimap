@@ -40,23 +40,9 @@ const Main: React.FC = () => {
 
 const MapComponent: React.FC<{iframeRef: React.RefObject<HTMLDivElement | null>}> = ({iframeRef}) => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
-    const [userLocation, setUserLocation] = useState<[number, number]>([45.90629672479033, 24.757182928865113]);
+    const [userLocation, setUserLocation] = useState<[number, number]>([45.75678167138013, 21.228344930015357]);
 
     const memoizedMarkers = useMemo(() => wikiMarkers, [wikiMarkers]);
-
-    const handleMarkerClick = (page: WikiPage) => {
-        const newUrl = `https://en.wikipedia.org/?curid=${page.pageid}`;
-
-        if (iframeRef.current) {
-            const iframe = iframeRef.current.querySelector("iframe");
-            if (iframe) {
-                iframe.src = newUrl;  // manually update the iframe src
-            }
-        }
-
-        iframeRef.current?.classList.remove("hidden");
-        iframeRef.current?.classList.add("visible");
-    }
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -78,26 +64,48 @@ const MapComponent: React.FC<{iframeRef: React.RefObject<HTMLDivElement | null>}
 
             <MarkerClusterGroup>
                 {memoizedMarkers.map((page) => (
-                    <CircleMarker key={page.pageid}
-                                  radius={5}
-                                  center={[page.lat, page.lon]}
-                                  eventHandlers={{
-                                      click: () => {
-                                          handleMarkerClick(page)
-                                      }
-                                  }}>
-                        {
-                            page.views && (
-                                <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
-                                    {page.views}
-                                </Tooltip>
-                            )}
-                    </CircleMarker>
+                   <CircleMarkerComponent page={page} iframeRef={iframeRef}/>
                 ))}
             </MarkerClusterGroup>
 
             <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
         </MapContainer>
+    )
+}
+
+const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObject<HTMLDivElement | null>}> = ({page, iframeRef}) => {
+    const map = useMap();
+
+    return (
+        <CircleMarker key={page.pageid}
+                      radius={5}
+                      center={[page.lat, page.lon]}
+                      eventHandlers={{
+                          click: () => {
+                              console.log("clicked");
+                              const url = `https://en.wikipedia.org/?curid=${page.pageid}`;
+
+                              if (iframeRef.current) {
+                                  const iframe = iframeRef.current.querySelector("iframe");
+                                  if (iframe) {
+                                      iframe.src = url;  // manually update the iframe src
+                                  }
+                              }
+
+                              iframeRef.current?.classList.remove("hidden");
+                              iframeRef.current?.classList.add("visible");
+
+                              console.log("map", map)
+                              map.flyTo([page.lat, page.lon], map.getZoom(), {duration: 1.5})
+                          }
+                      }}>
+            {
+                page.views && (
+                    <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
+                        {page.views}
+                    </Tooltip>
+                )}
+        </CircleMarker>
     )
 }
 
