@@ -112,8 +112,7 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
 
 const Map: React.FC = () => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
-    const [userLocation, setUserLocation] = useState<number[]>([0, 0]);
-    const pageUrl = useRef<string | null>(null);
+    const [userLocation, setUserLocation] = useState<[number, number]>([45.90629672479033, 24.757182928865113]);
     const iframeVisibility = useRef(false);
 
     const popupRef = useRef<HTMLDivElement>(null);
@@ -132,17 +131,24 @@ const Map: React.FC = () => {
     }, [])
 
     const handleClickOutside = (event: MouseEvent) => {
-        if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-            iframeVisibility.current = false;
-            pageUrl.current = null;
-
-            popupRef.current?.classList.remove("visible");
-            popupRef.current?.classList.add("hidden");
+        if (popupRef.current && popupRef.current.contains(event.target as Node)) {
+            return;
         }
+
+        const leafletInteractive = document.querySelectorAll(".leaflet-interactive");
+        for (const marker of leafletInteractive) {
+            if (marker.contains(event.target as Node)) {
+                return;
+            }
+        }
+
+        iframeVisibility.current = false;
+
+        popupRef.current?.classList.remove("visible");
+        popupRef.current?.classList.add("hidden");
     };
 
-    const handleMarkerClick = useCallback((page: WikiPage) => {
-        console.log("clicked", page.pageid);
+    const handleMarkerClick = (page: WikiPage) => {
         const newUrl = `https://en.wikipedia.org/?curid=${page.pageid}`;
 
         if (popupRef.current) {
@@ -155,7 +161,7 @@ const Map: React.FC = () => {
         iframeVisibility.current = true;
         popupRef.current?.classList.remove("hidden");
         popupRef.current?.classList.add("visible");
-    }, []); // empty dependency array ensures the function reference doesn't change
+    }
 
 
     useEffect(() => {
@@ -168,9 +174,9 @@ const Map: React.FC = () => {
 
     return (
         <div style={{ height: "100%", width:"100%"}}>
-            {<IframePopup pageUrl={pageUrl} iFrameRef={popupRef} />}
+            {<IframePopup iFrameRef={popupRef} />}
 
-            <MapContainer key={userLocation.toString()} center={[userLocation[0], userLocation[1]]} zoom={6} style={{ height: "100%", width: "100%" }}>
+            <MapContainer key={userLocation.toString()} center={userLocation} zoom={6} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -203,10 +209,10 @@ const Map: React.FC = () => {
     );
 };
 
-const IframePopup: React.FC<{ pageUrl: RefObject<string | null>, iFrameRef : React.Ref<HTMLDivElement> }> = ({ pageUrl, iFrameRef}) => {
+const IframePopup: React.FC<{iFrameRef : React.Ref<HTMLDivElement> }> = ({iFrameRef}) => {
     return (
         <div ref={iFrameRef} className={`iframe hidden`}>
-            <iframe src={pageUrl.current!} title="Wikipedia Page" style={{ width: "100%", height: "100%" }} />
+            <iframe src={""} title="Wikipedia Page" style={{ width: "100%", height: "100%" }} />
         </div>
     );
 };

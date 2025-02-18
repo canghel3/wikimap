@@ -25,7 +25,6 @@ type MediaWikiService struct {
 	url    string
 }
 
-// TODO: implement options for url, client etc
 func NewMediaWikiAPI() *MediaWikiService {
 	mws := &MediaWikiService{
 		client: http.DefaultClient,

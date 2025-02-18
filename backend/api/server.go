@@ -6,22 +6,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Point struct {
-	Lat         float64 `json:"lat"`
-	Lon         float64 `json:"lon"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-}
-
 func Run() error {
 	r := gin.Default()
 
 	configuration := config.AppConfig
 
-	// serve static files (CSS, JS, etc.)
+	//static files (CSS, JS, etc.)
 	r.Static("/assets", configuration.Files.Static.Root)
 
-	// serve the main HTML page
+	//main HTML page
 	r.GET("/", func(c *gin.Context) {
 		c.File(configuration.Files.Static.Index)
 	})
