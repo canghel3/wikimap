@@ -1,8 +1,9 @@
 import React, {useState, useEffect, useRef, useCallback, useMemo, RefObject} from "react";
-import { MapContainer, TileLayer, Tooltip, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Tooltip, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import 'react-leaflet-markercluster/styles'
 import './styles/wikipage-frame.css'
+import './styles/search-button.css'
 import {LatLng} from "leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 
@@ -26,16 +27,142 @@ interface PageViewsResponse {
     // };
 }
 
-const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoomBegin : number}> = ({ setMarkers, zoomBegin = 15 }) => {
-    const map = useMap(); // access the current map instance
+const Main: React.FC = () => {
+    const iframeRef = useRef<HTMLDivElement>(null);
 
-    const fetchWikipediaPages = async () => {
-        const zoom = map.getZoom();
-        if (zoom < zoomBegin) {
-            alert("zoom in to search pages.")
+    return (
+        <div style={{ height: "100%", width:"100%"}}>
+            <IframePopup iframeRef={iframeRef} />
+            <MapComponent iframeRef={iframeRef} />
+        </div>
+    );
+};
+
+const MapComponent: React.FC<{iframeRef: React.RefObject<HTMLDivElement | null>}> = ({iframeRef}) => {
+    const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
+    const [userLocation, setUserLocation] = useState<[number, number]>([45.90629672479033, 24.757182928865113]);
+
+    const memoizedMarkers = useMemo(() => wikiMarkers, [wikiMarkers]);
+
+    const handleMarkerClick = (page: WikiPage) => {
+        const newUrl = `https://en.wikipedia.org/?curid=${page.pageid}`;
+
+        if (iframeRef.current) {
+            const iframe = iframeRef.current.querySelector("iframe");
+            if (iframe) {
+                iframe.src = newUrl;  // manually update the iframe src
+            }
+        }
+
+        iframeRef.current?.classList.remove("hidden");
+        iframeRef.current?.classList.add("visible");
+    }
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                setUserLocation([position.coords.latitude, position.coords.longitude])
+                console.log(position.coords);
+            })
+        } else {
+            console.log("Geolocation is not supported")
+        }
+    }, [])
+
+    return (
+        <MapContainer key={userLocation.toString()} center={userLocation} zoom={6} style={{ height: "100%", width: "100%" }}>
+            <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+
+            <MarkerClusterGroup>
+                {memoizedMarkers.map((page) => (
+                    <CircleMarker key={page.pageid}
+                                  radius={5}
+                                  center={[page.lat, page.lon]}
+                                  eventHandlers={{
+                                      click: () => {
+                                          handleMarkerClick(page)
+                                      }
+                                  }}>
+                        {
+                            page.views && (
+                                <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
+                                    {page.views}
+                                </Tooltip>
+                            )}
+                    </CircleMarker>
+                ))}
+            </MarkerClusterGroup>
+
+            <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
+        </MapContainer>
+    )
+}
+
+const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null> }> = ({iframeRef}) => {
+    const handleClickOutside = (event: MouseEvent) => {
+        if (iframeRef.current && iframeRef.current.contains(event.target as Node)) {
             return;
         }
 
+        const leafletInteractive = document.querySelectorAll(".leaflet-interactive");
+        for (const marker of leafletInteractive) {
+            if (marker.contains(event.target as Node)) {
+                return;
+            }
+        }
+
+        iframeRef.current?.classList.remove("visible");
+        iframeRef.current?.classList.add("hidden");
+
+        const iframe = iframeRef.current?.querySelector("iframe");
+        if (iframe) {
+            iframe.src = "";
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+    })
+
+
+    return (
+        <div ref={iframeRef} className={`iframe hidden`}>
+            <iframe src={""} title="Wikipedia Page" style={{ width: "100%", height: "100%" }} />
+        </div>
+    );
+};
+
+const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoomBegin : number}> = ({ setMarkers, zoomBegin = 15 }) => {
+    const [disabled, setDisabled] = useState<boolean>(true);
+
+    const map = useMapEvents({
+        zoomend: () => {
+            if (map.getZoom() >= zoomBegin) {
+                const button = document.querySelector(`.search-button.unavailable`);
+                if (button) {
+                    button.classList.remove("unavailable");
+                    button.classList.add("available");
+                    button.textContent = "Search area"
+                    setDisabled(false);
+                }
+
+                return;
+            }
+
+            const button = document.querySelector(`.search-button.available`);
+            if (button) {
+                button.classList.remove("available");
+                button.classList.add("unavailable");
+                button.textContent = "Zoom in to search"
+                setDisabled(true);
+            }
+        }
+    });
+
+    const fetchWikipediaPages = async () => {
         try {
             const bounds = map.getBounds()
             const bbox = [
@@ -91,131 +218,14 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
 
     return (
         <button
+            className={`search-button unavailable`}
             onClick={fetchWikipediaPages}
-            style={{
-                position: "absolute",
-                top: "5%",
-                left: "50%",
-                padding: "10px 20px",
-                backgroundColor: "white",
-                color: "black",
-                border: "1px solid black",
-                borderRadius: "5px",
-                zIndex: 1000,
-                cursor: "pointer",
-            }}
+            disabled={disabled}
         >
-            Search this area
+            Zoom in to search
         </button>
     );
 };
 
-const Map: React.FC = () => {
-    const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
-    const [userLocation, setUserLocation] = useState<[number, number]>([45.90629672479033, 24.757182928865113]);
-    const iframeVisibility = useRef(false);
 
-    const popupRef = useRef<HTMLDivElement>(null);
-
-    const memoizedMarkers = useMemo(() => wikiMarkers, [wikiMarkers]);
-
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(position => {
-                setUserLocation([position.coords.latitude, position.coords.longitude])
-                console.log(position.coords);
-            })
-        } else {
-            console.log("Geolocation is not supported")
-        }
-    }, [])
-
-    const handleClickOutside = (event: MouseEvent) => {
-        if (popupRef.current && popupRef.current.contains(event.target as Node)) {
-            return;
-        }
-
-        const leafletInteractive = document.querySelectorAll(".leaflet-interactive");
-        for (const marker of leafletInteractive) {
-            if (marker.contains(event.target as Node)) {
-                return;
-            }
-        }
-
-        iframeVisibility.current = false;
-
-        popupRef.current?.classList.remove("visible");
-        popupRef.current?.classList.add("hidden");
-    };
-
-    const handleMarkerClick = (page: WikiPage) => {
-        const newUrl = `https://en.wikipedia.org/?curid=${page.pageid}`;
-
-        if (popupRef.current) {
-            const iframe = popupRef.current.querySelector("iframe");
-            if (iframe) {
-                iframe.src = newUrl;  // manually update the iframe src
-            }
-        }
-
-        iframeVisibility.current = true;
-        popupRef.current?.classList.remove("hidden");
-        popupRef.current?.classList.add("visible");
-    }
-
-
-    useEffect(() => {
-        if (iframeVisibility) {
-            document.addEventListener("mousedown", handleClickOutside);
-        } else {
-            document.removeEventListener("mousedown", handleClickOutside);
-        }
-    }, [iframeVisibility]);
-
-    return (
-        <div style={{ height: "100%", width:"100%"}}>
-            {<IframePopup iFrameRef={popupRef} />}
-
-            <MapContainer key={userLocation.toString()} center={userLocation} zoom={6} style={{ height: "100%", width: "100%" }}>
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-
-                <MarkerClusterGroup>
-                    {memoizedMarkers.map((page) => (
-                        <CircleMarker key={page.pageid}
-                                      radius={5}
-                                      center={[page.lat, page.lon]}
-                                      eventHandlers={{
-                                          click: () => {
-                                              handleMarkerClick(page)
-                                          }
-                                      }}>
-                            {
-                                page.views && (
-                                    <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
-                                        {page.views}
-                                    </Tooltip>
-                            )}
-                        </CircleMarker>
-                    ))}
-                </MarkerClusterGroup>
-
-                <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
-            </MapContainer>
-
-        </div>
-    );
-};
-
-const IframePopup: React.FC<{iFrameRef : React.Ref<HTMLDivElement> }> = ({iFrameRef}) => {
-    return (
-        <div ref={iFrameRef} className={`iframe hidden`}>
-            <iframe src={""} title="Wikipedia Page" style={{ width: "100%", height: "100%" }} />
-        </div>
-    );
-};
-
-
-export default Map;
+export default Main;

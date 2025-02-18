@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
-import Map from "./map";
+import Main from "./map";
 
 
 const root = createRoot(document.getElementById('root')!);
-root.render(<Map/>);
+root.render(<Main/>);
