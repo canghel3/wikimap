@@ -2,8 +2,8 @@ package api
 
 import (
 	"errors"
-	"github.com/Ginger955/telemetry/log"
 	"github.com/canghel3/geo-wiki/service"
+	"github.com/canghel3/telemetry/log"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"

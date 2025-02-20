@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Ginger955/telemetry/log"
 	"github.com/canghel3/geo-wiki/config"
+	"github.com/canghel3/telemetry/log"
 	"github.com/spf13/viper"
 	"strings"
 )
