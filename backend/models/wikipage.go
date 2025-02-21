@@ -85,3 +85,6 @@ func (pv PageViews) Sum() uint {
 
 	return sum
 }
+
+type WikiPagePreview struct {
+}

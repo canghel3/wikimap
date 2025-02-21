@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import 'react-leaflet-markercluster/styles'
 import './styles/wikipage-frame.css'
 import './styles/search-button.css'
-import {LatLng} from "leaflet";
+import L, {LatLng} from "leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 
 // Define a type for Wikipedia pages
@@ -28,19 +28,19 @@ interface PageViewsResponse {
 }
 
 const Main: React.FC = () => {
-    const iframeRef = useRef<HTMLDivElement>(null);
-
     return (
         <div style={{ height: "100%", width:"100%"}}>
-            <IframePopup iframeRef={iframeRef} />
-            <MapComponent iframeRef={iframeRef} />
+            <MapComponent />
         </div>
     );
 };
 
-const MapComponent: React.FC<{iframeRef: React.RefObject<HTMLDivElement | null>}> = ({iframeRef}) => {
+const MapComponent: React.FC = () => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
     const [userLocation, setUserLocation] = useState<[number, number]>([45.75678167138013, 21.228344930015357]);
+
+    const iframeRef = useRef<HTMLDivElement>(null);
+    const lastMarkerRef = useRef<L.CircleMarker | null>(null);
 
     const memoizedMarkers = useMemo(() => wikiMarkers, [wikiMarkers]);
 
@@ -56,48 +56,67 @@ const MapComponent: React.FC<{iframeRef: React.RefObject<HTMLDivElement | null>}
     }, [])
 
     return (
-        <MapContainer key={userLocation.toString()} center={userLocation} zoom={6} style={{ height: "100%", width: "100%" }}>
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
+        <>
+            <MapContainer key={userLocation.toString()} center={userLocation} zoom={6}
+                          style={{height: "100%", width: "100%"}}>
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
 
-            <MarkerClusterGroup>
-                {memoizedMarkers.map((page) => (
-                   <CircleMarkerComponent page={page} iframeRef={iframeRef}/>
-                ))}
-            </MarkerClusterGroup>
+                <MarkerClusterGroup>
+                    {memoizedMarkers.map((page) => (
+                        <CircleMarkerComponent page={page} iframeRef={iframeRef} lastMarkerRef={lastMarkerRef} />
+                    ))}
+                </MarkerClusterGroup>
 
-            <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
-        </MapContainer>
+                <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
+                <IframePopup iframeRef={iframeRef} />
+            </MapContainer>
+        </>
     )
 }
 
-const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObject<HTMLDivElement | null>}> = ({page, iframeRef}) => {
+const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObject<HTMLDivElement | null>, lastMarkerRef : React.RefObject<L.CircleMarker | null>, defaultColor? : string}> = ({page, iframeRef, lastMarkerRef, defaultColor}) => {
     const map = useMap();
+    const markerRef = useRef<L.CircleMarker | null>(null);
+
+    const handleMarkerClick = () => {
+        if (lastMarkerRef.current && markerRef.current && lastMarkerRef.current !== markerRef.current) {
+            lastMarkerRef.current.setStyle({
+                color: "blue"
+            })
+        }
+
+        const url = `https://en.wikipedia.org/?curid=${page.pageid}`;
+
+        if (iframeRef.current) {
+            const iframe = iframeRef.current.querySelector("iframe");
+            if (iframe) {
+                iframe.src = url;
+            }
+        }
+
+        lastMarkerRef.current = markerRef.current;
+        markerRef.current?.setStyle({
+            color: "red",
+        })
+
+        iframeRef.current?.classList.remove("hidden");
+        iframeRef.current?.classList.add("visible");
+
+        map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
+    };
 
     return (
         <CircleMarker key={page.pageid}
+                      ref={markerRef}
                       radius={5}
                       center={[page.lat, page.lon]}
+                      pathOptions={{
+                          color: "blue"
+                      }}
                       eventHandlers={{
-                          click: () => {
-                              console.log("clicked");
-                              const url = `https://en.wikipedia.org/?curid=${page.pageid}`;
-
-                              if (iframeRef.current) {
-                                  const iframe = iframeRef.current.querySelector("iframe");
-                                  if (iframe) {
-                                      iframe.src = url;  // manually update the iframe src
-                                  }
-                              }
-
-                              iframeRef.current?.classList.remove("hidden");
-                              iframeRef.current?.classList.add("visible");
-
-                              console.log("map", map)
-                              map.flyTo([page.lat, page.lon], map.getZoom(), {duration: 1.5})
-                          }
+                          click: () => handleMarkerClick()
                       }}>
             {
                 page.views && (
@@ -109,18 +128,26 @@ const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObjec
     )
 }
 
-const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null> }> = ({iframeRef}) => {
+const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>}> = ({iframeRef}) => {
+    const map = useMap();
+
     const handleClickOutside = (event: MouseEvent) => {
         if (iframeRef.current && iframeRef.current.contains(event.target as Node)) {
             return;
         }
 
-        const leafletInteractive = document.querySelectorAll(".leaflet-interactive");
-        for (const marker of leafletInteractive) {
-            if (marker.contains(event.target as Node)) {
-                return;
+        map.eachLayer((layer) => {
+            if (layer instanceof L.CircleMarker) {
+                const element = layer.getElement(); // Get corresponding DOM element
+                if (element && element.contains(event.target as Node)) {
+                    return;
+                } else if (element) {
+                    layer.setStyle({
+                        color: "blue",
+                    })
+                }
             }
-        }
+        });
 
         iframeRef.current?.classList.remove("visible");
         iframeRef.current?.classList.add("hidden");
@@ -131,10 +158,10 @@ const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null> 
         }
     };
 
+
     useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
     })
-
 
     return (
         <div ref={iframeRef} className={`iframe hidden`}>

@@ -169,3 +169,7 @@ func (mws *MediaWikiService) SearchWikiPages(bbox string) ([]models.WikiPage, er
 		return nil, fmt.Errorf("status code: %d; with message: %s", response.StatusCode, string(content))
 	}
 }
+
+func (mws *MediaWikiService) GetPopularPagesPreview(pages []models.WikiPage) ([]models.WikiPage, error) {
+	return nil, nil
+}
