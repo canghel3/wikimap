@@ -1,5 +1,5 @@
-import React, {useState, useEffect, useRef, useCallback, useMemo, RefObject} from "react";
-import { MapContainer, TileLayer, Tooltip, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
+import React, {useState, useEffect, useRef, useCallback, useMemo, RefObject, use} from "react";
+import { MapContainer, TileLayer, Tooltip, Popup, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
 import "leaflet/dist/leaflet.css";
 import 'react-leaflet-markercluster/styles'
 import './styles/wikipage-frame.css'
@@ -57,7 +57,7 @@ const MapComponent: React.FC = () => {
 
     return (
         <>
-            <MapContainer key={userLocation.toString()} center={userLocation} zoom={6}
+            <MapContainer key={userLocation.toString()} center={userLocation} zoom={16}
                           style={{height: "100%", width: "100%"}}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -70,7 +70,7 @@ const MapComponent: React.FC = () => {
                 </MarkerClusterGroup>
 
                 <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15}/>
-                <IframePopup iframeRef={iframeRef} />
+                <IframePopup iframeRef={iframeRef} lastMarkerRef={lastMarkerRef} />
             </MapContainer>
         </>
     )
@@ -79,12 +79,19 @@ const MapComponent: React.FC = () => {
 const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObject<HTMLDivElement | null>, lastMarkerRef : React.RefObject<L.CircleMarker | null>, defaultColor? : string}> = ({page, iframeRef, lastMarkerRef, defaultColor}) => {
     const map = useMap();
     const markerRef = useRef<L.CircleMarker | null>(null);
+    const popupRef = useRef<L.Popup | null>(null);
 
     const handleMarkerClick = () => {
-        if (lastMarkerRef.current && markerRef.current && lastMarkerRef.current !== markerRef.current) {
-            lastMarkerRef.current.setStyle({
-                color: "blue"
-            })
+        if (lastMarkerRef.current && markerRef.current) {
+            if (lastMarkerRef.current === markerRef.current) {
+                return;
+            }
+
+            if (lastMarkerRef.current !== markerRef.current) {
+                lastMarkerRef.current.setStyle({
+                    color: "blue"
+                })
+            }
         }
 
         const url = `https://en.wikipedia.org/?curid=${page.pageid}`;
@@ -107,6 +114,17 @@ const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObjec
         map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
     };
 
+    useEffect(() => {
+        if (!map || !popupRef.current || !markerRef.current) return;
+
+        // Get the Leaflet popup instance from the marker
+        const markerInstance = markerRef.current;
+        const popupInstance = popupRef.current;
+
+        // Open the popup only if the marker has a popup
+        markerInstance.bindPopup(popupInstance).openPopup();
+    }, [map, popupRef.current, markerRef.current]);
+
     return (
         <CircleMarker key={page.pageid}
                       ref={markerRef}
@@ -119,16 +137,19 @@ const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObjec
                           click: () => handleMarkerClick()
                       }}>
             {
-                page.views && (
-                    <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent>
-                        {page.views}
-                    </Tooltip>
+                (page.title) && (
+                    <Popup ref={popupRef}>
+                        <div style={{ textAlign: "center" }}>
+                            <strong>{page.title}</strong><br/>
+                            {page.views + ` views in the last month`} <br/>
+                        </div>
+                    </Popup>
                 )}
         </CircleMarker>
     )
 }
 
-const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>}> = ({iframeRef}) => {
+const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>, lastMarkerRef: React.RefObject<L.CircleMarker | null>}> = ({iframeRef, lastMarkerRef}) => {
     const map = useMap();
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -136,10 +157,12 @@ const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>}
             return;
         }
 
+        let found = false;
         map.eachLayer((layer) => {
             if (layer instanceof L.CircleMarker) {
                 const element = layer.getElement(); // Get corresponding DOM element
                 if (element && element.contains(event.target as Node)) {
+                    found = true;
                     return;
                 } else if (element) {
                     layer.setStyle({
@@ -148,6 +171,12 @@ const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>}
                 }
             }
         });
+
+        if (found) {
+            return;
+        }
+
+        lastMarkerRef.current = null;
 
         iframeRef.current?.classList.remove("visible");
         iframeRef.current?.classList.add("hidden");
