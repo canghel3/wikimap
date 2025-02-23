@@ -42,7 +42,10 @@ const MapComponent: React.FC = () => {
     const iframeRef = useRef<HTMLDivElement>(null);
     const lastMarkerRef = useRef<L.CircleMarker | null>(null);
 
+    const markerRefs = useRef<React.RefObject<L.CircleMarker | null>[]>([]); // ✅ Array of refs
+
     const memoizedMarkers = useMemo(() => wikiMarkers, [wikiMarkers]);
+    const mapRef = useRef<L.Map | null>(null);
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -57,15 +60,20 @@ const MapComponent: React.FC = () => {
 
     return (
         <>
-            <MapContainer key={userLocation.toString()} center={userLocation} zoom={16}
+            <MapContainer ref={mapRef} key={userLocation.toString()} center={userLocation} zoom={16}
                           style={{height: "100%", width: "100%"}}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
 
                 <MarkerClusterGroup>
-                    {memoizedMarkers.map((page) => (
-                        <CircleMarkerComponent page={page} iframeRef={iframeRef} lastMarkerRef={lastMarkerRef} />
+                    {wikiMarkers.map((page) => (
+                        <CircleMarkerComponent
+                            key={page.pageid}
+                            page={page}
+                            iframeRef={iframeRef}
+                            lastMarkerRef={lastMarkerRef}
+                        />
                     ))}
                 </MarkerClusterGroup>
 
@@ -76,37 +84,29 @@ const MapComponent: React.FC = () => {
     )
 }
 
-const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObject<HTMLDivElement | null>, lastMarkerRef : React.RefObject<L.CircleMarker | null>, defaultColor? : string}> = ({page, iframeRef, lastMarkerRef, defaultColor}) => {
+const CircleMarkerComponent: React.FC<{
+    page: WikiPage;
+    iframeRef: React.RefObject<HTMLDivElement | null>;
+    lastMarkerRef: React.RefObject<L.CircleMarker | null>;
+    defaultColor?: string;
+}> = ({ page, iframeRef, lastMarkerRef, defaultColor }) => {
     const map = useMap();
     const markerRef = useRef<L.CircleMarker | null>(null);
     const popupRef = useRef<L.Popup | null>(null);
 
     const handleMarkerClick = () => {
-        if (lastMarkerRef.current && markerRef.current) {
+        if (lastMarkerRef.current && markerRef) {
             if (lastMarkerRef.current === markerRef.current) {
                 return;
             }
-
-            if (lastMarkerRef.current !== markerRef.current) {
-                lastMarkerRef.current.setStyle({
-                    color: "blue"
-                })
-            }
+            lastMarkerRef.current.setStyle({ color: "blue" });
         }
 
         const url = `https://en.wikipedia.org/?curid=${page.pageid}`;
-
-        if (iframeRef.current) {
-            const iframe = iframeRef.current.querySelector("iframe");
-            if (iframe) {
-                iframe.src = url;
-            }
-        }
+        iframeRef.current?.querySelector("iframe")?.setAttribute("src", url);
 
         lastMarkerRef.current = markerRef.current;
-        markerRef.current?.setStyle({
-            color: "red",
-        })
+        markerRef.current?.setStyle({ color: "red" });
 
         iframeRef.current?.classList.remove("hidden");
         iframeRef.current?.classList.add("visible");
@@ -114,40 +114,30 @@ const CircleMarkerComponent: React.FC<{page: WikiPage, iframeRef: React.RefObjec
         map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
     };
 
-    useEffect(() => {
-        if (!map || !popupRef.current || !markerRef.current) return;
-
-        // Get the Leaflet popup instance from the marker
-        const markerInstance = markerRef.current;
-        const popupInstance = popupRef.current;
-
-        // Open the popup only if the marker has a popup
-        markerInstance.bindPopup(popupInstance).openPopup();
-    }, [map, popupRef.current, markerRef.current]);
-
     return (
-        <CircleMarker key={page.pageid}
-                      ref={markerRef}
-                      radius={5}
-                      center={[page.lat, page.lon]}
-                      pathOptions={{
-                          color: "blue"
-                      }}
-                      eventHandlers={{
-                          click: () => handleMarkerClick()
-                      }}>
-            {
-                (page.title) && (
-                    <Popup ref={popupRef}>
-                        <div style={{ textAlign: "center" }}>
-                            <strong>{page.title}</strong><br/>
-                            {page.views + ` views in the last month`} <br/>
-                        </div>
-                    </Popup>
-                )}
+        <CircleMarker
+            key={page.pageid}
+            ref={markerRef}
+            radius={5}
+            center={[page.lat, page.lon]}
+            pathOptions={{ color: defaultColor || "blue" }}
+            eventHandlers={{
+                click: handleMarkerClick,
+                add: (e) => e.target.openPopup() // open popup when it's ready
+                    }}
+        >
+            {page.title && (
+                <Popup ref={popupRef} autoClose={false} closeOnClick={false}>
+                    <div style={{ textAlign: "center"}}>
+                        <strong>{page.title}</strong><br />
+                        {page.views} views in the last month<br />
+                    </div>
+                </Popup>
+            )}
         </CircleMarker>
-    )
-}
+    );
+};
+
 
 const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>, lastMarkerRef: React.RefObject<L.CircleMarker | null>}> = ({iframeRef, lastMarkerRef}) => {
     const map = useMap();
@@ -159,6 +149,10 @@ const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>,
 
         let found = false;
         map.eachLayer((layer) => {
+            if (found) {
+                return;
+            }
+
             if (layer instanceof L.CircleMarker) {
                 const element = layer.getElement(); // Get corresponding DOM element
                 if (element && element.contains(event.target as Node)) {
@@ -249,7 +243,7 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
                 lon: page.lon,
             }));
 
-            setMarkers(pages);
+            // setMarkers(pages);
 
             const pagesWithViews = await getPageViews(pages);
 
