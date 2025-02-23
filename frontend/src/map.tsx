@@ -123,11 +123,15 @@ const CircleMarkerComponent: React.FC<{
             pathOptions={{ color: defaultColor || "blue" }}
             eventHandlers={{
                 click: handleMarkerClick,
-                add: (e) => e.target.openPopup() // open popup when it's ready
-                    }}
+                add: (e) => {
+                    if (page.views > 400) {
+                        e.target.openPopup() // open popup when it's ready
+                    }
+                }
+            }}
         >
             {page.title && (
-                <Popup ref={popupRef} autoClose={false} closeOnClick={false}>
+                <Popup ref={popupRef} autoClose={false} closeOnClick={false} autoPan={false}>
                     <div style={{ textAlign: "center"}}>
                         <strong>{page.title}</strong><br />
                         {page.views} views in the last month<br />
