@@ -99,6 +99,7 @@ const CircleMarkerComponent: React.FC<{
             if (lastMarkerRef.current === markerRef.current) {
                 return;
             }
+            lastMarkerRef.current.fire("add")
             lastMarkerRef.current.setStyle({ color: "blue" });
         }
 
@@ -124,20 +125,32 @@ const CircleMarkerComponent: React.FC<{
             eventHandlers={{
                 click: handleMarkerClick,
                 add: (e) => {
-                    if (page.views > 400) {
+                    if (page.views >= 400) {
                         e.target.openPopup() // open popup when it's ready
+                    } else {
+                        e.target.closePopup()
+                    }
+                },
+                mouseover: (e) => {
+                    e.target.openPopup();
+                },
+                mouseout: (e) => {
+                    if (markerRef?.current != lastMarkerRef?.current) {
+                        if (page.views < 400) {
+                            e.target.closePopup()
+                        }
                     }
                 }
             }}
         >
-            {page.title && (
+            {
                 <Popup ref={popupRef} autoClose={false} closeOnClick={false} autoPan={false}>
                     <div style={{ textAlign: "center"}}>
                         <strong>{page.title}</strong><br />
                         {page.views} views in the last month<br />
                     </div>
                 </Popup>
-            )}
+            }
         </CircleMarker>
     );
 };
@@ -147,44 +160,32 @@ const IframePopup: React.FC<{iframeRef : React.RefObject<HTMLDivElement | null>,
     const map = useMap();
 
     const handleClickOutside = (event: MouseEvent) => {
-        if (iframeRef.current && iframeRef.current.contains(event.target as Node)) {
-            return;
-        }
+        const target = event.target as Node;
+
+        lastMarkerRef.current?.fire("add")
+
+        if (iframeRef.current?.contains(target)) return;
 
         let found = false;
         map.eachLayer((layer) => {
-            if (found) {
-                return;
-            }
+            if (found || !(layer instanceof L.CircleMarker)) return;
 
-            if (layer instanceof L.CircleMarker) {
-                const element = layer.getElement(); // Get corresponding DOM element
-                if (element && element.contains(event.target as Node)) {
-                    found = true;
-                    return;
-                } else if (element) {
-                    layer.setStyle({
-                        color: "blue",
-                    })
-                }
+            const element = layer.getElement();
+            if (element?.contains(target)) {
+                found = true;
+            } else {
+                layer.setStyle({ color: "blue" });
             }
         });
 
-        if (found) {
-            return;
-        }
+        if (found) return;
 
         lastMarkerRef.current = null;
-
-        iframeRef.current?.classList.remove("visible");
-        iframeRef.current?.classList.add("hidden");
+        iframeRef.current?.classList.replace("visible", "hidden");
 
         const iframe = iframeRef.current?.querySelector("iframe");
-        if (iframe) {
-            iframe.src = "";
-        }
+        if (iframe) iframe.src = "";
     };
-
 
     useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
@@ -205,8 +206,8 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
             if (map.getZoom() >= zoomBegin) {
                 const button = document.querySelector(`.search-button.unavailable`);
                 if (button) {
-                    button.classList.remove("unavailable");
                     button.classList.add("available");
+                    button.classList.remove("unavailable");
                     button.textContent = "Search area"
                     setDisabled(false);
                 }
@@ -226,6 +227,14 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
 
     const fetchWikipediaPages = async () => {
         try {
+            const button = document.querySelector(`.search-button`);
+            if (button) {
+                button.textContent = "Searching..."
+                button.classList.remove("available");
+                button.classList.add("unavailable");
+                setDisabled(true);
+            }
+
             const bounds = map.getBounds()
             const bbox = [
                 bounds.getNorthEast().lat, // maxLat (North)
@@ -252,6 +261,13 @@ const FindNearbyPages: React.FC<{ setMarkers: (pages: WikiPage[]) => void , zoom
             const pagesWithViews = await getPageViews(pages);
 
             setMarkers(pagesWithViews);
+
+            if (button) {
+                button.textContent = "Search area"
+                button.classList.remove("unavailable");
+                button.classList.add("available");
+                setDisabled(false);
+            }
         } catch (error) {
             console.error("Failed to fetch Wikipedia pages:", error);
         }

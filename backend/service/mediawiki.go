@@ -35,41 +35,21 @@ func NewMediaWikiAPI() *MediaWikiService {
 }
 
 func (mws *MediaWikiService) GetViews(pageids ...string) (models.WikiPageViews, error) {
-	var pagesWithViews = make(models.WikiPageViews)
+	pagesWithViews := make(models.WikiPageViews)
 
-	getViews := func(pageids ...string) error {
-		withViews, err := mws.getViews(pageids...)
+	for i := 0; i < len(pageids); i += ViewsRequestBatchSize {
+		end := i + ViewsRequestBatchSize
+		if end > len(pageids) {
+			end = len(pageids)
+		}
+
+		withViews, err := mws.getViews(pageids[i:end]...)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		for k, v := range withViews {
 			pagesWithViews[k] = v
-		}
-
-		return nil
-	}
-
-	if len(pageids) < ViewsRequestBatchSize {
-		err := getViews(pageids...)
-		if err != nil {
-			return nil, err
-		}
-
-		return pagesWithViews, nil
-	}
-
-	for i := 0; i < cap(pageids); i += ViewsRequestBatchSize {
-		var current []string
-		if i+ViewsRequestBatchSize > cap(pageids) {
-			current = pageids[i:]
-		} else {
-			current = pageids[i : i+ViewsRequestBatchSize]
-		}
-
-		err := getViews(current...)
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -170,6 +150,6 @@ func (mws *MediaWikiService) SearchWikiPages(bbox string) ([]models.WikiPage, er
 	}
 }
 
-func (mws *MediaWikiService) GetPopularPagesPreview(pages []models.WikiPage) ([]models.WikiPage, error) {
+func (mws *MediaWikiService) GetPopularPagesPreview(pageids ...string) ([]models.WikiPage, error) {
 	return nil, nil
 }
