@@ -32,7 +32,7 @@ func (s *Server) Run() error {
 		http.ServeFile(w, r, s.config.Files.Static.Index)
 	})
 
-	mediaWikiService := service.NewMediaWikiAPIService()
+	mediaWikiService := service.GetMediaWikiAPIService()
 
 	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
 	s.mux.Handle("/api/v1/pages/views", getPagesViews(mediaWikiService))

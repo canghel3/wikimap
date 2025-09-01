@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const (
@@ -22,18 +23,25 @@ const (
 	UserAgent = "GeoWiki/0.0 (cristian.anghel4@gmail.com) https://github.com/canghel3/geo-wiki"
 )
 
+var (
+	mediaWikiOnce    sync.Once
+	mediaWikiService *MediaWikiAPIService
+)
+
 type MediaWikiAPIService struct {
 	client *http.Client
 	url    string
 }
 
-func NewMediaWikiAPIService() *MediaWikiAPIService {
-	mws := &MediaWikiAPIService{
-		client: http.DefaultClient,
-		url:    config.Root.MediaWiki.URL,
-	}
+func GetMediaWikiAPIService() *MediaWikiAPIService {
+	mediaWikiOnce.Do(func() {
+		mediaWikiService = &MediaWikiAPIService{
+			client: http.DefaultClient,
+			url:    config.Root.MediaWiki.URL,
+		}
+	})
 
-	return mws
+	return mediaWikiService
 }
 
 func (mws *MediaWikiAPIService) GetViews(pageids ...string) (models.WikiPageViews, error) {
