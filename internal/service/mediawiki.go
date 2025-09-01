@@ -18,23 +18,25 @@ const (
 	DefaultGSLimit        = 100
 	MinimumGSLimit        = 1
 	MaximumGSLimit        = 500
+
+	UserAgent = "GeoWiki/0.0 (cristian.anghel4@gmail.com) https://github.com/canghel3/geo-wiki"
 )
 
-type MediaWikiService struct {
+type MediaWikiAPIService struct {
 	client *http.Client
 	url    string
 }
 
-func NewMediaWikiAPI() *MediaWikiService {
-	mws := &MediaWikiService{
+func NewMediaWikiAPIService() *MediaWikiAPIService {
+	mws := &MediaWikiAPIService{
 		client: http.DefaultClient,
-		url:    config.AppConfig.MediaWiki.URL,
+		url:    config.Root.MediaWiki.URL,
 	}
 
 	return mws
 }
 
-func (mws *MediaWikiService) GetViews(pageids ...string) (models.WikiPageViews, error) {
+func (mws *MediaWikiAPIService) GetViews(pageids ...string) (models.WikiPageViews, error) {
 	pagesWithViews := make(models.WikiPageViews)
 
 	for i := 0; i < len(pageids); i += ViewsRequestBatchSize {
@@ -56,11 +58,13 @@ func (mws *MediaWikiService) GetViews(pageids ...string) (models.WikiPageViews, 
 	return pagesWithViews, nil
 }
 
-func (mws *MediaWikiService) getViews(pages ...string) (models.WikiPageViews, error) {
+func (mws *MediaWikiAPIService) getViews(pages ...string) (models.WikiPageViews, error) {
 	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	request.Header.Add("User-Agent", UserAgent)
 
 	q := request.URL.Query()
 	q.Add("action", "query")
@@ -100,11 +104,13 @@ func (mws *MediaWikiService) getViews(pages ...string) (models.WikiPageViews, er
 	}
 }
 
-func (mws *MediaWikiService) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
+func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
 	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	request.Header.Add("User-Agent", UserAgent)
 
 	q := request.URL.Query()
 	q.Add("action", "query")
@@ -150,6 +156,6 @@ func (mws *MediaWikiService) SearchWikiPages(bbox string) ([]models.WikiPage, er
 	}
 }
 
-func (mws *MediaWikiService) GetPopularPagesPreview(pageids ...string) ([]models.WikiPage, error) {
+func (mws *MediaWikiAPIService) GetPopularPagesPreview(pageids ...string) ([]models.WikiPage, error) {
 	return nil, nil
 }

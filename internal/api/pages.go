@@ -4,49 +4,50 @@ import (
 	"errors"
 	"github.com/canghel3/geo-wiki/service"
 	"github.com/canghel3/telemetry/log"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func getPagesWithinBounds(mediaWikiService *service.MediaWikiService) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		bbox := c.Query("bbox")
+func getPagesWithinBounds(mediaWikiService *service.MediaWikiAPIService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bbox := r.URL.Query().Get("bbox")
 		if len(strings.Split(bbox, "|")) != 4 {
 			log.Stdout().Error().Logf("bbox format error: %s", bbox)
-			c.JSON(http.StatusBadRequest, gin.H{"message": "bbox format error"})
+			errorResponse(w, http.StatusBadRequest, "bbox format error")
 			return
 		}
 
 		pages, err := mediaWikiService.SearchWikiPages(bbox)
 		if err != nil {
 			log.Stdout().Error().Logf("error searching wiki pages: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error searching wiki pages"})
+			errorResponse(w, http.StatusInternalServerError, "error searching wiki pages")
 			return
 		}
 
-		c.JSON(http.StatusOK, pages)
+		setResponse(w, http.StatusOK, pages)
 	}
 }
 
-func getPagesViews(mediaWikiService *service.MediaWikiService) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		ids := strings.Split(c.Query("ids"), ",")
+func getPagesViews(mediaWikiService *service.MediaWikiAPIService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		queryIds := r.URL.Query().Get("ids")
+
+		ids := strings.Split(queryIds, ",")
 		if len(ids) < 1 {
-			log.Stdout().Error().Logf("id format error: %s", c.Query("ids"))
-			c.JSON(http.StatusBadRequest, gin.H{"message": "id format error"})
+			log.Stdout().Error().Logf("id format error: %s", queryIds)
+			errorResponse(w, http.StatusBadRequest, "id format error")
 			return
 		}
 
 		views, err := mediaWikiService.GetViews(ids...)
 		if err != nil {
 			log.Stdout().Error().Logf("error getting views: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error getting views"})
+			errorResponse(w, http.StatusInternalServerError, "error getting views")
 			return
 		}
 
-		c.JSON(http.StatusOK, views)
+		setResponse(w, http.StatusOK, views)
 	}
 }
 

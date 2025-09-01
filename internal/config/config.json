@@ -3,12 +3,12 @@
     "url" : "https://en.wikipedia.org/w/api.php"
   },
   "server" : {
-    "port" : ":9876"
+    "port" : 9876
   },
   "files" : {
     "static" : {
-      "root" : "/home/cristian/GolandProjects/geo-wiki/frontend/dist/assets",
-      "index" : "/home/cristian/GolandProjects/geo-wiki/frontend/dist/index.html"
+      "root" : "/frontend/dist/assets",
+      "index" : "/frontend/dist/index.html"
     }
   },
   "databases" : {

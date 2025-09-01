@@ -20,7 +20,7 @@ func initConfig() {
 		log.Stdout().Info().Logf("using config file: %s", viper.ConfigFileUsed())
 	}
 
-	err := viper.Unmarshal(&config.AppConfig)
+	err := viper.Unmarshal(&config.Root)
 	if err != nil {
 		panic(err)
 	}
