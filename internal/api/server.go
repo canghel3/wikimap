@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/canghel3/geo-wiki/config"
-	"github.com/canghel3/geo-wiki/service"
+	"github.com/canghel3/geo-wiki/services"
 	"github.com/canghel3/telemetry/log"
 	"net/http"
 )
@@ -32,7 +32,7 @@ func (s *Server) Run() error {
 		http.ServeFile(w, r, s.config.Files.Static.Index)
 	})
 
-	mediaWikiService := service.GetMediaWikiAPIService()
+	mediaWikiService := services.GetMediaWikiAPIService()
 
 	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
 	s.mux.Handle("/api/v1/pages/views", getPagesViews(mediaWikiService))
@@ -63,7 +63,8 @@ func logging(next http.Handler) http.Handler {
 	})
 }
 
-func errorResponse(w http.ResponseWriter, status int, message string) {
+func errorResponse(w http.ResponseWriter, status int, message string, err error) {
+	log.Stdout().Error().Logf("%d | %s", status, err.Error())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 

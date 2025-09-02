@@ -11,7 +11,7 @@ import './styles/search-button.css';
 import type { WikiPage } from "./components/types";
 import CircleMarkerComponent from "./components/marker";
 import IframePopup from "./components/iframe";
-import FindNearbyPages from "./components/pages";
+import FindNearbyPages from "./components/search";
 
 const defaultZoom = 3;
 
@@ -25,14 +25,14 @@ const Main: React.FC = () => {
 
 const MapComponent: React.FC = () => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
-    const [userLocation, setUserLocation] = useState<[number, number]>([0, 0]); // Default location: Timișoara
+    const [userLocation, setUserLocation] = useState<[number, number]>([0, 0]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const mapRef = useRef<L.Map | null>(null);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
             (position) => setUserLocation([position.coords.latitude, position.coords.longitude]),
-            () => console.log("Geolocation is not supported or permission denied.")
+            (err) => console.log("Error acquiring geolocation.", err)
         );
     }, []);
 

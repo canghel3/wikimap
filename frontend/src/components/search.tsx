@@ -8,40 +8,26 @@ interface FindNearbyPagesProps {
 }
 
 const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin = 15 }) => {
-    const [disabled, setDisabled] = useState<boolean>(true);
-    const [searching, setSearching] = useState<boolean>(false);
+    const [isDisabled, setIsDisabled] = useState<boolean>(true);
+    const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [buttonText, setButtonText] = useState<string>('Zoom in to search');
 
-    const button = document.querySelector<HTMLButtonElement>('.search-button');
+    const updateButtonState = () => {
+        // if a search is already in progress, do nothing.
+        if (isSearching) return;
 
-    const markAvailable = (): void => {
-        if (!button) return;
-
-        button.classList.remove("unavailable");
-        button.classList.add("available");
-        button.textContent = "Search this area";
-    }
-
-    const markUnavailable = (): void => {
-        if (!button) return;
-
-        button.classList.remove("available");
-        button.classList.add("unavailable");
-        button.textContent = "Zoom in to search";
-    }
+        if (map.getZoom() >= zoomBegin) {
+            setButtonText('Search this area');
+            setIsDisabled(false);
+        } else {
+            setButtonText('Zoom in to search');
+            setIsDisabled(true);
+        }
+    };
 
     const map = useMapEvents({
-        zoomend: () => {
-            const button = document.querySelector<HTMLButtonElement>('.search-button');
-            if (!button) return;
-            if (map.getZoom() >= zoomBegin && !searching) {
-                markAvailable();
-                setDisabled(false);
-            } else if (!searching) {
-                markUnavailable();
-                setDisabled(true);
-            }
-        },
-        load: () => map.fire('zoomend'),
+        zoomend: () => updateButtonState(),
+        load: () => updateButtonState()
     });
 
     const getPageViews = async (pages: Omit<WikiPage, 'views'>[]): Promise<WikiPage[]> => {
@@ -60,15 +46,11 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
     };
 
     const fetchWikipediaPages = async () => {
-        const button = document.querySelector<HTMLButtonElement>('.search-button');
+        setIsSearching(true);
+        setIsDisabled(true);
+        setButtonText("Seaching...");
+
         try {
-            if (button) {
-                button.textContent = "Searching...";
-                setDisabled(true);
-                setSearching(true);
-            } else {
-                return
-            }
             const bounds = map.getBounds();
             const bbox = `${bounds.getNorthEast().lat}|${bounds.getSouthWest().lng}|${bounds.getSouthWest().lat}|${bounds.getNorthEast().lng}`;
             const url = `http://localhost:9876/api/v1/pages?bbox=${bbox}`;
@@ -80,22 +62,18 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
             setMarkers(pagesWithViews);
         } catch (error) {
             console.error("Failed to fetch Wikipedia pages:", error);
-            setDisabled(false);
-            setSearching(false);
+            setIsSearching(false);
+            setIsDisabled(false);
         } finally {
-            if (map.getZoom() >= zoomBegin) {
-               markAvailable();
-            } else {
-                markUnavailable();
-            }
-            setDisabled(false);
-            setSearching(false);
+            setIsSearching(false);
+            setIsDisabled(false);
+            updateButtonState();
         }
     };
 
     return (
-        <button className="search-button unavailable" onClick={fetchWikipediaPages} disabled={disabled}>
-            Zoom in to search
+        <button className={`search-button ${isDisabled ? 'unavailable' : 'available'}`} onClick={fetchWikipediaPages} disabled={isDisabled}>
+            {buttonText}
         </button>
     );
 };

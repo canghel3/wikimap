@@ -2,26 +2,24 @@ package api
 
 import (
 	"errors"
-	"github.com/canghel3/geo-wiki/service"
-	"github.com/canghel3/telemetry/log"
+	"fmt"
+	"github.com/canghel3/geo-wiki/services"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func getPagesWithinBounds(mediaWikiService *service.MediaWikiAPIService) http.HandlerFunc {
+func getPagesWithinBounds(mediaWikiService *services.MediaWikiAPIService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bbox := r.URL.Query().Get("bbox")
 		if len(strings.Split(bbox, "|")) != 4 {
-			log.Stdout().Error().Logf("bbox format error: %s", bbox)
-			errorResponse(w, http.StatusBadRequest, "bbox format error")
+			errorResponse(w, http.StatusBadRequest, "bbox format error", fmt.Errorf("bbox format error: %s", bbox))
 			return
 		}
 
 		pages, err := mediaWikiService.SearchWikiPages(bbox)
 		if err != nil {
-			log.Stdout().Error().Logf("error searching wiki pages: %v", err)
-			errorResponse(w, http.StatusInternalServerError, "error searching wiki pages")
+			errorResponse(w, http.StatusInternalServerError, "error searching wiki pages", fmt.Errorf("error searching wiki pages: %v", err))
 			return
 		}
 
@@ -29,21 +27,19 @@ func getPagesWithinBounds(mediaWikiService *service.MediaWikiAPIService) http.Ha
 	}
 }
 
-func getPagesViews(mediaWikiService *service.MediaWikiAPIService) http.HandlerFunc {
+func getPagesViews(mediaWikiService *services.MediaWikiAPIService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryIds := r.URL.Query().Get("ids")
 
 		ids := strings.Split(queryIds, ",")
 		if len(ids) < 1 {
-			log.Stdout().Error().Logf("id format error: %s", queryIds)
-			errorResponse(w, http.StatusBadRequest, "id format error")
+			errorResponse(w, http.StatusBadRequest, "id format error", fmt.Errorf("id format error: %s", queryIds))
 			return
 		}
 
 		views, err := mediaWikiService.GetViews(ids...)
 		if err != nil {
-			log.Stdout().Error().Logf("error getting views: %v", err)
-			errorResponse(w, http.StatusInternalServerError, "error getting views")
+			errorResponse(w, http.StatusInternalServerError, "error getting views", fmt.Errorf("error getting views: %v", err))
 			return
 		}
 
