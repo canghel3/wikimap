@@ -9,20 +9,35 @@ interface FindNearbyPagesProps {
 
 const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin = 15 }) => {
     const [disabled, setDisabled] = useState<boolean>(true);
+    const [searching, setSearching] = useState<boolean>(false);
+
+    const button = document.querySelector<HTMLButtonElement>('.search-button');
+
+    const markAvailable = (): void => {
+        if (!button) return;
+
+        button.classList.remove("unavailable");
+        button.classList.add("available");
+        button.textContent = "Search this area";
+    }
+
+    const markUnavailable = (): void => {
+        if (!button) return;
+
+        button.classList.remove("available");
+        button.classList.add("unavailable");
+        button.textContent = "Zoom in to search";
+    }
 
     const map = useMapEvents({
         zoomend: () => {
             const button = document.querySelector<HTMLButtonElement>('.search-button');
             if (!button) return;
-            if (map.getZoom() >= zoomBegin) {
-                button.classList.add("available");
-                button.classList.remove("unavailable");
-                button.textContent = "Search this area";
+            if (map.getZoom() >= zoomBegin && !searching) {
+                markAvailable();
                 setDisabled(false);
-            } else {
-                button.classList.remove("available");
-                button.classList.add("unavailable");
-                button.textContent = "Zoom in to search";
+            } else if (!searching) {
+                markUnavailable();
                 setDisabled(true);
             }
         },
@@ -50,6 +65,9 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
             if (button) {
                 button.textContent = "Searching...";
                 setDisabled(true);
+                setSearching(true);
+            } else {
+                return
             }
             const bounds = map.getBounds();
             const bbox = `${bounds.getNorthEast().lat}|${bounds.getSouthWest().lng}|${bounds.getSouthWest().lat}|${bounds.getNorthEast().lng}`;
@@ -62,11 +80,16 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
             setMarkers(pagesWithViews);
         } catch (error) {
             console.error("Failed to fetch Wikipedia pages:", error);
+            setDisabled(false);
+            setSearching(false);
         } finally {
-            if (button && map.getZoom() >= zoomBegin) {
-                button.textContent = "Search this area";
-                setDisabled(false);
+            if (map.getZoom() >= zoomBegin) {
+               markAvailable();
+            } else {
+                markUnavailable();
             }
+            setDisabled(false);
+            setSearching(false);
         }
     };
 

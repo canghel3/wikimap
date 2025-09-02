@@ -17,6 +17,7 @@ const CircleMarkerComponent: React.FC<CircleMarkerComponentProps> = ({ page, isS
     const handleMarkerClick = () => {
         onSelect(page.pageid); // Notify the mediator
         map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
+        popupRef.current?.openPopup()
     };
 
     const color = isSelected ? "red" : "blue";

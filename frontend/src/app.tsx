@@ -13,6 +13,8 @@ import CircleMarkerComponent from "./components/marker";
 import IframePopup from "./components/iframe";
 import FindNearbyPages from "./components/pages";
 
+const defaultZoom = 3;
+
 const Main: React.FC = () => {
     return (
         <div style={{ height: "100%", width: "100%" }}>
@@ -23,7 +25,7 @@ const Main: React.FC = () => {
 
 const MapComponent: React.FC = () => {
     const [wikiMarkers, setWikiMarkers] = useState<WikiPage[]>([]);
-    const [userLocation, setUserLocation] = useState<[number, number]>([45.75, 21.22]); // Default location: Timișoara
+    const [userLocation, setUserLocation] = useState<[number, number]>([0, 0]); // Default location: Timișoara
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const mapRef = useRef<L.Map | null>(null);
 
@@ -45,7 +47,7 @@ const MapComponent: React.FC = () => {
 
     return (
         <>
-            <MapContainer ref={mapRef} key={userLocation.toString()} center={userLocation} zoom={16} style={{ height: "100%", width: "100%" }}>
+            <MapContainer ref={mapRef} key={userLocation.toString()} center={userLocation} zoom={defaultZoom} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

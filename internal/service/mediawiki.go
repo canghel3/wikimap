@@ -18,7 +18,7 @@ const (
 	ViewsRequestBatchSize = 20
 	DefaultGSLimit        = 100
 	MinimumGSLimit        = 1
-	MaximumGSLimit        = 500
+	MaximumGSLimit        = "500"
 
 	UserAgent = "GeoWiki/0.0 (cristian.anghel4@gmail.com) https://github.com/canghel3/geo-wiki"
 )
@@ -124,7 +124,7 @@ func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage,
 	q.Add("action", "query")
 	q.Add("list", "geosearch")
 	q.Add("gsbbox", bbox)
-	q.Add("gslimit", "500")
+	q.Add("gslimit", MaximumGSLimit)
 	q.Add("format", "json")
 
 	request.URL.RawQuery = q.Encode()
