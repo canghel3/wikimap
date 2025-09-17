@@ -37,7 +37,7 @@ func (s *Server) Run() error {
 	s.mux.Handle("/pages", getPagesWithinBounds(mediaWikiService))
 	s.mux.Handle("/pages/views", getPagesViews(mediaWikiService))
 
-	handler := recovery(logging(s.mux))
+	handler := recovery(logging(corsMiddleware(s.mux)))
 
 	// start the server
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.config.Server.Port), handler)
@@ -59,6 +59,27 @@ func recovery(next http.Handler) http.Handler {
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Stdout().Info().Logf("%s | %s | %s", r.RemoteAddr, r.Method, r.URL)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Handle preflight requests
+		// The browser sends an OPTIONS request first to check if the actual request is safe to send.
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
