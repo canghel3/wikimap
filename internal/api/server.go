@@ -34,8 +34,8 @@ func (s *Server) Run() error {
 
 	mediaWikiService := services.GetMediaWikiAPIService()
 
-	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
-	s.mux.Handle("/api/v1/pages/views", getPagesViews(mediaWikiService))
+	s.mux.Handle("/pages", getPagesWithinBounds(mediaWikiService))
+	s.mux.Handle("/pages/views", getPagesViews(mediaWikiService))
 
 	handler := recovery(logging(s.mux))
 
