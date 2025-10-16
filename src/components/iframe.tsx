@@ -15,6 +15,7 @@ const IframePopup: React.FC<IframePopupProps> = ({ selectedPage, onClose }) => {
                 const isClickOnMarker = (event.target as HTMLElement).closest('.leaflet-marker-icon, .leaflet-interactive');
                 if (!isClickOnMarker) {
                     onClose();
+                    // iframeContainerRef.current.className.replace('visible', 'invisible');
                 }
             }
         };
@@ -22,11 +23,15 @@ const IframePopup: React.FC<IframePopupProps> = ({ selectedPage, onClose }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [selectedPage, onClose]);
 
-    const isVisible = !!selectedPage;
-    const url = selectedPage ? `https://en.wikipedia.org/?curid=${selectedPage.pageid}` : "";
+    if (!selectedPage) {
+        // do not render the iframe at all when there is no selected page to avoid empty src warnings
+        return null;
+    }
+
+    const url = `https://en.wikipedia.org/?curid=${selectedPage.pageid}`;
 
     return (
-        <div ref={iframeContainerRef} className={`iframe ${isVisible ? 'visible' : 'hidden'}`}>
+        <div ref={iframeContainerRef} className="iframe visible">
             <button className="close-button" onClick={onClose}>×</button>
             <iframe src={url} title="Wikipedia Page" style={{ width: "100%", height: "100%", border: 'none' }} />
         </div>

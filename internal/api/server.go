@@ -3,10 +3,11 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/canghel3/geo-wiki/config"
 	"github.com/canghel3/geo-wiki/services"
 	"github.com/canghel3/telemetry/log"
-	"net/http"
 )
 
 type Server struct {
@@ -34,8 +35,8 @@ func (s *Server) Run() error {
 
 	mediaWikiService := services.GetMediaWikiAPIService()
 
-	s.mux.Handle("/pages", getPagesWithinBounds(mediaWikiService))
-	s.mux.Handle("/pages/views", getPagesViews(mediaWikiService))
+	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
+	s.mux.Handle("/api/v1/pages/views", getPagesViews(mediaWikiService))
 
 	handler := recovery(logging(corsMiddleware(s.mux)))
 

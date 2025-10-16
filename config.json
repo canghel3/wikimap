@@ -1,6 +1,8 @@
 {
   "mediawiki" : {
-    "url" : "https://en.wikipedia.org/w/api.php"
+    "url" : "https://en.wikipedia.org/w/api.php",
+    "rate" : 100,
+    "burst" : 10
   },
   "server" : {
     "port" : 9876

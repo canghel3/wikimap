@@ -1,49 +1,33 @@
-import React, {useEffect, useMemo, useRef} from "react";
-import {CircleMarker, Popup, useMap, useMapEvents} from "react-leaflet";
+import React, {useRef} from "react";
+import {CircleMarker, Popup, useMap} from "react-leaflet";
 import L from "leaflet";
-import type { WikiPage } from "./types"; // Import the shared type
+import type { WikiPage } from "./types";
 
-// Props for CircleMarkerComponent
 interface CircleMarkerComponentProps {
     page: WikiPage;
-    isSelected: boolean;
-    onSelect: (pageId: string) => void;
+    onSelect: (marker: L.CircleMarker | null, pageId: string, resetFunc: () => void) => void;
 }
 
-const CircleMarkerComponent: React.FC<CircleMarkerComponentProps> = ({ page, isSelected, onSelect }) => {
+const CircleMarkerComponent: React.FC<CircleMarkerComponentProps> = ({ page, onSelect }) => {
     const markerRef = useRef<L.CircleMarker | null>(null);
 
+    let isSelected = false;
     const map = useMap()
 
-    const showPopup = () => {
-        if (isSelected && markerRef.current) {
-            markerRef.current.openPopup()
-        }
+    const reset = () => {
+        isSelected = false;
+        markerRef.current?.closePopup();
     }
 
     const handleMarkerClick = () => {
-        onSelect(page.pageid); // notify the mediator
-        map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
-    };
+        isSelected = true;
 
-    useEffect(() => {
-        if (isSelected) {
-            map.on("moveend", showPopup);
-            map.on("zoomend", showPopup);
-
-            // Cleanup function to remove listeners
-            return () => {
-                map.off("moveend", showPopup);
-                map.off("zoomend", showPopup);
-            };
-        } else {
-            // Also remove listeners when marker is deselected
-            map.off("moveend", showPopup);
-            map.off("zoomend", showPopup);
+        if (markerRef.current) {
+            onSelect(markerRef.current, page.pageid, reset); // notify the mediator
+            markerRef.current?.openPopup();
+            map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
         }
-    }, [isSelected, map]);
-
-    const color = isSelected ? "red" : "blue";
+    };
 
     return (
         <CircleMarker
@@ -51,7 +35,7 @@ const CircleMarkerComponent: React.FC<CircleMarkerComponentProps> = ({ page, isS
             key={page.pageid}
             radius={5}
             center={[page.lat, page.lon]}
-            pathOptions={{ color }}
+            pathOptions={{color: "blue", weight: 2}}
             eventHandlers={{
                 click: handleMarkerClick,
                 mouseover: (e) => e.target.openPopup(),

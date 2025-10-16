@@ -3,10 +3,11 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/canghel3/geo-wiki/services"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/canghel3/geo-wiki/services"
 )
 
 func getPagesWithinBounds(mediaWikiService *services.MediaWikiAPIService) http.HandlerFunc {

@@ -1,20 +1,21 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/canghel3/geo-wiki/config"
-	"github.com/canghel3/geo-wiki/models"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/canghel3/geo-wiki/config"
+	"github.com/canghel3/geo-wiki/models"
+	"golang.org/x/time/rate"
 )
 
 const (
-	FormatJSON = "json"
-
 	ViewsRequestBatchSize = 20
 	DefaultGSLimit        = 100
 	MinimumGSLimit        = 1
@@ -29,15 +30,17 @@ var (
 )
 
 type MediaWikiAPIService struct {
-	client *http.Client
-	url    string
+	client      *http.Client
+	url         string
+	rateLimiter *rate.Limiter
 }
 
 func GetMediaWikiAPIService() *MediaWikiAPIService {
 	mediaWikiOnce.Do(func() {
 		mediaWikiService = &MediaWikiAPIService{
-			client: http.DefaultClient,
-			url:    config.Root.MediaWiki.URL,
+			client:      http.DefaultClient,
+			url:         config.Root.MediaWiki.URL,
+			rateLimiter: rate.NewLimiter(rate.Limit(config.Root.MediaWiki.Rate), config.Root.MediaWiki.Burst),
 		}
 	})
 
@@ -45,6 +48,11 @@ func GetMediaWikiAPIService() *MediaWikiAPIService {
 }
 
 func (mws *MediaWikiAPIService) GetViews(pageids ...string) (models.WikiPageViews, error) {
+	err := mws.rateLimiter.Wait(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	pagesWithViews := make(models.WikiPageViews)
 
 	for i := 0; i < len(pageids); i += ViewsRequestBatchSize {
@@ -113,6 +121,11 @@ func (mws *MediaWikiAPIService) getViews(pages ...string) (models.WikiPageViews,
 }
 
 func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
+	err := mws.rateLimiter.Wait(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
 	if err != nil {
 		return nil, err
