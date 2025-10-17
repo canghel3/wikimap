@@ -37,6 +37,7 @@ func (s *Server) Run() error {
 
 	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
 	s.mux.Handle("/api/v1/pages/views", getPagesViews(mediaWikiService))
+	s.mux.Handle("/api/v1/pages/thumbnails", getPagesThumbnails(mediaWikiService))
 
 	handler := recovery(logging(corsMiddleware(s.mux)))
 
@@ -74,9 +75,9 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-		// Handle preflight requests
-		// The browser sends an OPTIONS request first to check if the actual request is safe to send.
-		if r.Method == "OPTIONS" {
+		// handle preflight requests
+		// the browser sends an OPTIONS request first to check if the actual request is safe to send.
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -96,7 +97,7 @@ func errorResponse(w http.ResponseWriter, status int, message string, err error)
 }
 
 func setResponse(w http.ResponseWriter, status int, content any) {
-	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow any origin
+	w.Header().Set("Access-Control-Allow-Origin", "*") // allow any origin
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 

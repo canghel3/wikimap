@@ -116,10 +116,11 @@ func (mws *MediaWikiAPIService) getViews(pages ...string) (models.WikiPageViews,
 
 		return pagesWithViews, nil
 	default:
-		return nil, fmt.Errorf("status code: %d; with message: %s", response.StatusCode, string(content))
+		return nil, fmt.Errorf("http status: %d\nmessage: %s", response.StatusCode, string(content))
 	}
 }
 
+// SearchWikiPages searches for wikipedia pages within a given bbox. Bbox format is of the form maxy|minx|miny|maxx
 func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
 	err := mws.rateLimiter.Wait(context.Background())
 	if err != nil {
@@ -173,10 +174,81 @@ func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage,
 
 		return pages, nil
 	default:
-		return nil, fmt.Errorf("status code: %d; with message: %s", response.StatusCode, string(content))
+		return nil, fmt.Errorf("http status: %d\nmessage: %s", response.StatusCode, string(content))
 	}
 }
 
-func (mws *MediaWikiAPIService) GetPopularPagesPreview(pageids ...string) ([]models.WikiPage, error) {
-	return nil, nil
+func (mws *MediaWikiAPIService) GetThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
+	err := mws.rateLimiter.Wait(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	thumbnails := make(models.WikiPageThumbnails)
+
+	for i := 0; i < len(pageids); i += ViewsRequestBatchSize {
+		end := i + ViewsRequestBatchSize
+		if end > len(pageids) {
+			end = len(pageids)
+		}
+
+		withThumbnails, err := mws.getThumbnails(width, pageids[i:end]...)
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range withThumbnails {
+			thumbnails[k] = v
+		}
+	}
+
+	return thumbnails, nil
+}
+
+func (mws *MediaWikiAPIService) getThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
+	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("User-Agent", UserAgent)
+
+	q := request.URL.Query()
+	q.Add("action", "query")
+	q.Add("prop", "pageimages")
+	q.Add("pageids", strings.Join(pageids, "|"))
+	q.Add("pithumbsize", strconv.Itoa(int(width)))
+	q.Add("format", "json")
+	q.Add("origin", "*")
+
+	request.URL.RawQuery = q.Encode()
+
+	response, err := mws.client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	switch response.StatusCode {
+	case http.StatusOK:
+		var thumbnailResponse models.WikiPageThumbnailResponse
+		err = json.Unmarshal(content, &thumbnailResponse)
+		if err != nil {
+			return nil, err
+		}
+
+		var thumbnails = make(models.WikiPageThumbnails)
+		for id, thumbnailPage := range thumbnailResponse.Query.Pages {
+			thumbnails[id] = thumbnailPage.Thumbnail
+		}
+
+		return thumbnails, nil
+	default:
+		return nil, fmt.Errorf("http status: %d\nmessage: %s", response.StatusCode, string(content))
+	}
 }

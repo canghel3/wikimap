@@ -1,45 +1,21 @@
 package models
 
-type WikiPages []WikiPage
+import (
+	"sync"
+)
 
-func (w WikiPages) IDs() []string {
-	ids := make([]string, len(w))
-	for i, page := range w {
-		ids[i] = page.PageId
-	}
-
-	return ids
-}
-
-func (w WikiPages) Get(id string) *WikiPage {
-	for _, page := range w {
-		if page.PageId == id {
-			return &page
-		}
-	}
-
-	return nil
-}
-
-func (w WikiPages) Update(id string, v *WikiPage) {
-	if v == nil {
-		return
-	}
-
-	for i := 0; i < len(w); i++ {
-		if w[i].PageId == id {
-			w[i] = *v
-			return
-		}
-	}
+type WikiPages struct {
+	pages map[string]WikiPage
+	lock  sync.RWMutex
 }
 
 type WikiPage struct {
-	PageId string  `json:"pageid"`
-	Views  uint    `json:"views"`
-	Title  string  `json:"title"`
-	Lat    float64 `json:"lat"`
-	Lon    float64 `json:"lon"`
+	PageId    string  `json:"pageid"`
+	Thumbnail []byte  `json:"thumbnail"`
+	Views     uint    `json:"views"`
+	Title     string  `json:"title"`
+	Lat       float64 `json:"lat"`
+	Lon       float64 `json:"lon"`
 }
 
 type WikiPageSearchResponse struct {
@@ -84,7 +60,4 @@ func (pv PageViews) Sum() uint {
 	}
 
 	return sum
-}
-
-type WikiPagePreview struct {
 }

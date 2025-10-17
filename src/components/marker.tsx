@@ -8,7 +8,7 @@ import selectedMarkerIcon from '../assets/selected-marker.png';
 
 interface MarkerComponentProps {
     page: WikiPage;
-    onSelect: (marker: L.Marker | null, pageId: string, resetFunc: () => void) => void;
+    onSelect: (pageId: string, resetFunc: () => void) => void;
 }
 
 const MarkerComponent: React.FC<MarkerComponentProps> = ({ page, onSelect }) => {
@@ -27,7 +27,7 @@ const MarkerComponent: React.FC<MarkerComponentProps> = ({ page, onSelect }) => 
         isSelected = true;
 
         if (markerRef.current) {
-            onSelect(markerRef.current, page.pageid, reset); // notify the mediator
+            onSelect(page.pageid, reset); // notify the mediator
             markerRef.current?.openPopup();
             markerRef.current?.setIcon(selectedIcon);
             map.flyTo([page.lat, page.lon], map.getZoom(), { duration: 1.0 });
@@ -37,13 +37,15 @@ const MarkerComponent: React.FC<MarkerComponentProps> = ({ page, onSelect }) => 
     const defaultIcon = L.icon({
         iconUrl: defaultMarkerIcon,
         iconSize: [40, 40],
-        popupAnchor: [0, -20]
+        iconAnchor: [0, 10],
+        popupAnchor: [20, -10]
     });
 
     const selectedIcon = L.icon({
         iconUrl: selectedMarkerIcon,
         iconSize: [40, 40],
-        popupAnchor: [0, -20]
+        iconAnchor: [0, 10],
+        popupAnchor: [20, -10]
     });
 
     return (
@@ -64,6 +66,9 @@ const MarkerComponent: React.FC<MarkerComponentProps> = ({ page, onSelect }) => 
         >
             <Popup autoClose={false} closeOnClick={false} autoPan={false}>
                 <div style={{ textAlign: "center" }}>
+                    {page.thumbnail && (
+                        <img src={page.thumbnail} alt={page.title} style={{ width: "100%", height: "auto" }} />
+                    )}
                     <strong>{page.title}</strong><br />
                     {page.views} views last month<br />
                 </div>

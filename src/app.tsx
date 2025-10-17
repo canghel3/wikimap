@@ -28,7 +28,6 @@ const MapComponent: React.FC = () => {
     const [userLocation, setUserLocation] = useState<[number, number]>([0, 0]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const mapRef = useRef<L.Map | null>(null);
-    const selectedMarkerRef = useRef<L.Marker | null>(null);
     const resetFuncRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
@@ -50,11 +49,11 @@ const MapComponent: React.FC = () => {
         [selectedPageId, wikiMarkers]
     );
 
-    const handleMarkerSelect = (marker: L.Marker | null, pageId: string | null, resetFunc: (() => void) | null) => {
+    const handleMarkerSelect = (pageId: string | null, resetFunc: (() => void) | null) => {
+        //if there's a reset function then trigger it
         resetFuncRef.current?.();
         resetFuncRef.current = resetFunc;
 
-        selectedMarkerRef.current = marker;
         setSelectedPageId(pageId);
     }
 
@@ -80,7 +79,7 @@ const MapComponent: React.FC = () => {
                 </MarkerClusterGroup>
                 <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15} />
             </MapContainer>
-            <IframePopup selectedPage={selectedPage} onClose={() => handleMarkerSelect(null, null, null)} />
+            <IframePopup selectedPage={selectedPage} onClose={() => handleMarkerSelect(null, null)} />
         </>
     );
 };

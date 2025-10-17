@@ -4,4 +4,5 @@ export interface WikiPage {
     title: string;
     lat: number;
     lon: number;
+    thumbnail: string;
 }
