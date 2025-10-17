@@ -9,7 +9,7 @@ import './styles/wikipage-frame.css';
 import './styles/search-button.css';
 
 import type { WikiPage } from "./components/types";
-import CircleMarkerComponent from "./components/marker";
+import MarkerComponent from "./components/marker";
 import IframePopup from "./components/iframe";
 import FindNearbyPages from "./components/search";
 
@@ -28,8 +28,8 @@ const MapComponent: React.FC = () => {
     const [userLocation, setUserLocation] = useState<[number, number]>([0, 0]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const mapRef = useRef<L.Map | null>(null);
-    let selectedMarkerRef = useRef<L.CircleMarker | null>(null);
-    let resetFuncRef = useRef<(() => void) | null>(null);
+    const selectedMarkerRef = useRef<L.Marker | null>(null);
+    const resetFuncRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
@@ -41,7 +41,7 @@ const MapComponent: React.FC = () => {
     // when the userLocation is obtained, adjust the map view without remounting the map
     useEffect(() => {
         if (mapRef.current && (userLocation[0] !== 0 || userLocation[1] !== 0)) {
-            mapRef.current.setView(userLocation, defaultZoom);
+            mapRef.current.flyTo(userLocation, defaultZoom);
         }
     }, [userLocation]);
 
@@ -50,21 +50,8 @@ const MapComponent: React.FC = () => {
         [selectedPageId, wikiMarkers]
     );
 
-    const handleMarkerSelect = (marker: L.CircleMarker | null, pageId: string | null, resetFunc: (() => void) | null) => {
-        selectedMarkerRef.current?.setStyle({
-            color: "blue",
-            weight: 2
-        })
-
-        if(resetFuncRef.current) {
-            resetFuncRef.current();
-        }
-
-        marker?.setStyle({
-            color: "red",
-            weight: 3
-        })
-
+    const handleMarkerSelect = (marker: L.Marker | null, pageId: string | null, resetFunc: (() => void) | null) => {
+        resetFuncRef.current?.();
         resetFuncRef.current = resetFunc;
 
         selectedMarkerRef.current = marker;
@@ -73,21 +60,13 @@ const MapComponent: React.FC = () => {
 
     const markers = useMemo(() => {
         return wikiMarkers.map((page) => (
-                <CircleMarkerComponent
+                <MarkerComponent
                     key={page.pageid}
                     page={page}
                     onSelect={handleMarkerSelect}
                 />
             ))
     }, [wikiMarkers])
-
-    // const createClusterCustomIcon = function (cluster : typeof MarkerClusterGroup) {
-    //     return new divIcon({
-    //         html: `<span class="cluster-icon">${cluster.getChildCount()}</span>`,
-    //         className: "custom-marker-cluster",
-    //         iconSize: point(33, 33, true)
-    //     });
-    // };
 
     return (
         <>
@@ -96,7 +75,7 @@ const MapComponent: React.FC = () => {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                <MarkerClusterGroup /*iconCreateFunction={createClusterCustomIcon}*/>
+                <MarkerClusterGroup>
                     {markers}
                 </MarkerClusterGroup>
                 <FindNearbyPages setMarkers={setWikiMarkers} zoomBegin={15} />
