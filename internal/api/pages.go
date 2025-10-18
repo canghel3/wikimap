@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/canghel3/geo-wiki/services"
+	"github.com/canghel3/wikimap/services"
 )
 
 func getPagesWithinBounds(mediaWikiService *services.MediaWikiAPIService) http.HandlerFunc {

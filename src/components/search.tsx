@@ -7,6 +7,7 @@ interface FindNearbyPagesProps {
     zoomBegin: number;
 }
 
+//TODO: search when 
 const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin = 15 }) => {
     const [isDisabled, setIsDisabled] = useState<boolean>(true);
     const [isSearching, setIsSearching] = useState<boolean>(false);

@@ -1,4 +1,4 @@
-module github.com/canghel3/geo-wiki
+module github.com/canghel3/wikimap
 
 go 1.23.4
 

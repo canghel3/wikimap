@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {MapContainer, TileLayer} from 'react-leaflet';
 import L from "leaflet";
-import { divIcon, point } from "leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet/dist/leaflet.css";
 import 'react-leaflet-markercluster/styles';

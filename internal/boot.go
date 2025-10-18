@@ -3,17 +3,18 @@ package main
 import (
 	"strings"
 
-	"github.com/canghel3/geo-wiki/config"
 	"github.com/canghel3/telemetry/log"
+	"github.com/canghel3/wikimap/config"
 	"github.com/spf13/viper"
 )
 
 func initConfig() {
+	viper.AddConfigPath("./")
 	viper.AddConfigPath("../")
 	viper.AddConfigPath("../..")
 	viper.SetConfigName("config")
 
-	viper.SetEnvPrefix("geowiki")
+	viper.SetEnvPrefix("wikimap")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 

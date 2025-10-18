@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/canghel3/geo-wiki/api"
-	"github.com/canghel3/geo-wiki/config"
+	"github.com/canghel3/wikimap/api"
+	"github.com/canghel3/wikimap/config"
 )
 
 func init() {

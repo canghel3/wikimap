@@ -10,16 +10,16 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/canghel3/geo-wiki/config"
-	"github.com/canghel3/geo-wiki/models"
+	"github.com/canghel3/wikimap/config"
+	"github.com/canghel3/wikimap/models"
 	"golang.org/x/time/rate"
 )
 
 const (
-	ViewsRequestBatchSize = 20
-	DefaultGSLimit        = 100
-	MinimumGSLimit        = 1
-	MaximumGSLimit        = "500"
+	RequestBatchSize = 20
+	DefaultGSLimit   = 100
+	MinimumGSLimit   = 1
+	MaximumGSLimit   = "500"
 
 	UserAgent = "GeoWiki/0.0 (cristian.anghel4@gmail.com) https://github.com/canghel3/geo-wiki"
 )
@@ -55,8 +55,8 @@ func (mws *MediaWikiAPIService) GetViews(pageids ...string) (models.WikiPageView
 
 	pagesWithViews := make(models.WikiPageViews)
 
-	for i := 0; i < len(pageids); i += ViewsRequestBatchSize {
-		end := i + ViewsRequestBatchSize
+	for i := 0; i < len(pageids); i += RequestBatchSize {
+		end := i + RequestBatchSize
 		if end > len(pageids) {
 			end = len(pageids)
 		}
@@ -186,8 +186,8 @@ func (mws *MediaWikiAPIService) GetThumbnails(width uint, pageids ...string) (mo
 
 	thumbnails := make(models.WikiPageThumbnails)
 
-	for i := 0; i < len(pageids); i += ViewsRequestBatchSize {
-		end := i + ViewsRequestBatchSize
+	for i := 0; i < len(pageids); i += RequestBatchSize {
+		end := i + RequestBatchSize
 		if end > len(pageids) {
 			end = len(pageids)
 		}

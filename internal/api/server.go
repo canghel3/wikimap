@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/canghel3/geo-wiki/config"
-	"github.com/canghel3/geo-wiki/services"
 	"github.com/canghel3/telemetry/log"
+	"github.com/canghel3/wikimap/config"
+	"github.com/canghel3/wikimap/services"
 )
 
 type Server struct {

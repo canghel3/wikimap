@@ -1,3 +1,3 @@
-# geo-wiki
+# WikiMap
 
-#### Simple web app for searching wikipedia pages around the world
+Search Wikipedia pages around the world.

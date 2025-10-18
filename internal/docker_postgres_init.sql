@@ -1,7 +1,7 @@
-CREATE USER geowiki;
-CREATE ROLE geowiki;
-CREATE DATABASE geowiki OWNER geowiki;
-GRANT ALL PRIVILEGES ON DATABASE geowiki TO geowiki;
+CREATE USER wikimap;
+CREATE ROLE wikimap;
+CREATE DATABASE wikimap OWNER wikimap;
+GRANT ALL PRIVILEGES ON DATABASE wikimap TO wikimap;
 
 CREATE TABLE users(
     user_id serial primary key,
@@ -9,5 +9,5 @@ CREATE TABLE users(
     password text not null,
     email text not null,
     enabled boolean not null default false,
-    created_at date
+    created_at date not null default current_timestamp
 );
