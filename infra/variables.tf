@@ -1,24 +1,24 @@
-variable "gcp_project_id" {
+variable "GCP_PROJECT_ID" {
   type        = string
 }
 
-variable "gcp_region" {
+variable "GCP_REGION" {
   type        = string
   default     = "europe-west4"
 }
 
-variable "artifact_registry_repo_id" {
+variable "REPOSITORY_NAME" {
   type        = string
 }
 
-variable "cloud_run_service_name" {
+variable "CLOUD_RUN_SERVICE_NAME" {
   type        = string
 }
 
-variable "frontend_bucket_name" {
+variable "FRONTEND_BUCKET_NAME" {
   type        = string
 }
 
-variable "image_name" {
+variable "IMAGE_NAME" {
   type        = string
 }
