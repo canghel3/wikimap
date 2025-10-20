@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useMapEvents } from 'react-leaflet';
 import type { WikiPage } from './types';
+import config from '../config';
 
 interface FindNearbyPagesProps {
     setMarkers: (pages: WikiPage[]) => void;
     zoomBegin: number;
 }
 
-//TODO: search when 
+//TODO: search when moving to new location
 const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin = 15 }) => {
     const [isDisabled, setIsDisabled] = useState<boolean>(true);
     const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -36,7 +37,7 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
         if (pages.length === 0) return [];
         try {
             const ids = pages.map(page => page.pageid).join(',');
-            const url = `http://localhost:9876/api/v1/pages/views?ids=${ids}`;
+            const url = `${config.apiUrl}/api/v1/pages/views?ids=${ids}`;
             const response = await fetch(url);
 
             if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -54,7 +55,7 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
         if (pages.length === 0) return [];
         try {
             const ids = pages.map(page => page.pageid).join(',');
-            const url = `http://localhost:9876/api/v1/pages/thumbnails?ids=${ids}&width=200`;
+            const url = `${config.apiUrl}/api/v1/pages/thumbnails?ids=${ids}&width=200`;
             const response = await fetch(url);
 
             if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -89,7 +90,7 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
         try {
             const bounds = map.getBounds();
             const bbox = `${bounds.getNorthEast().lat}|${bounds.getSouthWest().lng}|${bounds.getSouthWest().lat}|${bounds.getNorthEast().lng}`;
-            const url = `http://localhost:9876/api/v1/pages?bbox=${bbox}`;
+            const url = `${config.apiUrl}/api/v1/pages?bbox=${bbox}`;
 
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Error: ${response.status}`);

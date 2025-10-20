@@ -44,6 +44,8 @@ jobs:
       runs-on: ubuntu-latest
       environment: ${{ github.ref_name }}
       needs: build-and-push
+      outputs:
+        backend_url: ${{ steps.apply.outputs.cloud_run_url }}
       # Set TF_VAR_ environment variables, which Terraform automatically uses
       env:
         TF_VAR_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -102,6 +104,9 @@ jobs:
           with:
             workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
             service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+        - name: Configure Frontend Environment
+          run: echo "VITE_API_URL=${{ needs.terraform.outputs.backend_url }}" > .env.production
 
         - name: Install Dependencies & Build Frontend
           run: |
