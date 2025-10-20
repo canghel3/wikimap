@@ -7,7 +7,7 @@ FROM alpine:latest
 WORKDIR /wikimap
 COPY --from=compiler /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=compiler /wikimap /wikimap
-COPY ./internal/config.json /wikimap/config.json
+COPY internal/config.json /wikimap/config.json
 
 RUN apk add --no-cache bash
 
