@@ -3,6 +3,9 @@ name: Terraform
 on:
   workflow_call:
     inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
       GCP_REGION:
         required: true
         type: string
@@ -30,7 +33,7 @@ jobs:
   terraform:
     name: Apply Terraform
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
+    environment: ${{ inputs.ENVIRONMENT }}
     # Set TF_VAR_ environment variables, which Terraform automatically uses
     env:
       TF_VAR_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

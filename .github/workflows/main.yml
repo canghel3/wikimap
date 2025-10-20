@@ -16,6 +16,7 @@ jobs:
     name: Build Backend Service
     uses: ./.github/workflows/build-and-push.yml
     with:
+      ENVIRONMENT: ${{ github.ref_name }}
       IMAGE_NAME: ${{ vars.IMAGE_NAME }}
       REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
       GAR_LOCATION: ${{ vars.GAR_LOCATION }}
@@ -30,6 +31,7 @@ jobs:
     needs: build-backend
     uses: ./.github/workflows/terraform.yml
     with:
+      ENVIRONMENT: ${{ github.ref_name }}
       GCP_REGION: ${{ vars.GAR_LOCATION }}
       REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
       IMAGE_NAME: ${{ vars.IMAGE_NAME }}

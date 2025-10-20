@@ -3,6 +3,9 @@ name: Build and Push to Artifact Registry
 on:
   workflow_call:
     inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
       IMAGE_NAME:
         required: true
         type: string
@@ -24,7 +27,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
+    environment: ${{ inputs.ENVIRONMENT }}
 
     steps:
       - name: Checkout code
