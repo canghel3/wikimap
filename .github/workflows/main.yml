@@ -71,7 +71,12 @@ jobs:
           working-directory: ./infra
           run: terraform init
 
+        - name: Terraform Plan
+          id: plan
+          working-directory: ./infra
+          run: terraform plan -out=tfplan
+
         - name: Terraform Apply
           id: apply
           working-directory: ./infra
-          run: terraform apply -auto-approve
+          run: terraform apply "tfplan"
