@@ -1,7 +1,7 @@
 FROM golang:1.25 AS compiler
 WORKDIR /wikimap
-COPY ./internal /wikimap
-RUN cd /wikimap && go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o wikimap .
+COPY . /wikimap
+RUN cd /wikimap && go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o wikimap ./internal
 
 FROM alpine:latest
 WORKDIR /wikimap
