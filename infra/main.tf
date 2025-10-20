@@ -49,7 +49,7 @@ resource "google_cloud_run_v2_service_iam_member" "allow_public" {
 # 3. FRONTEND: Create a GCS bucket to host the static frontend
 resource "google_storage_bucket" "frontend_bucket" {
   name          = var.FRONTEND_BUCKET_NAME
-  location      = "EU" # Multi-region is often better for websites
+  location      = var.GCP_REGION
   force_destroy = true # Useful for development
 
   website {
