@@ -80,3 +80,40 @@ jobs:
           id: apply
           working-directory: ./infra
           run: terraform apply "tfplan"
+
+    build-and-push-frontend:
+      name: Build and Push Frontend
+      runs-on: ubuntu-latest
+      environment: ${{ github.ref_name }}
+      needs: terraform
+
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+            # Use the Node.js version your project requires
+            node-version: '20'
+
+        - name: Authenticate to Google Cloud
+          uses: google-github-actions/auth@v2
+          with:
+            workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+            service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+        - name: Install Dependencies & Build Frontend
+          run: |
+            npm install
+            npm run build
+
+        - name: Upload to GCS
+          uses: 'google-github-actions/upload-cloud-storage@v2'
+          with:
+            # The folder created by 'npm run build'
+            path: ./dist
+            # The name of the bucket
+            destination: ${{ vars.FRONTEND_BUCKET_NAME }}
+            # This ensures the contents of 'dist' are uploaded, not the folder itself
+            parent: false
