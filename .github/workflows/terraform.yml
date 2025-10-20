@@ -1,6 +1,4 @@
-# .github/workflows/reusable-terraform-apply.yml
-
-name: Reusable - Apply Terraform Configuration
+name: Terraform
 
 on:
   workflow_call:
@@ -30,10 +28,10 @@ on:
         required: true
 
 jobs:
-  terraform-apply-logic:
+  terraform:
     name: Apply Terraform
     runs-on: ubuntu-latest
-    
+    environment: ${{ github.ref_name }}
     # Set TF_VAR_ environment variables, which Terraform automatically uses
     env:
       TF_VAR_GCP_PROJECT_ID: ${{ inputs.GCP_PROJECT_ID }}

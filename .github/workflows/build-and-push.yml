@@ -1,4 +1,4 @@
-name: Build and Push Docker Image to Artifact Registry
+name: Build and Push to Artifact Registry
 
 on:
   workflow_call:
@@ -21,9 +21,10 @@ on:
         required: true
 
 jobs:
-  build-and-push-logic:
+  build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
 
     steps:
       - name: Checkout code
@@ -37,12 +38,12 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Configure Docker
-        run: gcloud auth configure-docker ${{ inputs.gar_location }}-docker.pkg.dev
+        run: gcloud auth configure-docker ${{ inputs.GAR_LOCATION }}-docker.pkg.dev
 
       - name: Build Docker image
         run: >
-          docker build . --tag "${{ inputs.gar_location }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.repository_name }}/${{ inputs.image_name }}:latest"
+          docker build . --tag "${{ inputs.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.REPOSITORY_NAME }}/${{ inputs.IMAGE_NAME }}:latest"
 
       - name: Push Docker image
         run: >
-          docker push "${{ inputs.gar_location }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.repository_name }}/${{ inputs.image_name }}:latest"
+          docker push "${{ inputs.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.REPOSITORY_NAME }}/${{ inputs.IMAGE_NAME }}:latest"
