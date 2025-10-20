@@ -1,36 +1,40 @@
 # Configure the Google Provider
 provider "google" {
-  project = "wikimap-475508"
-  region  = "europe-west4"
+  project = var.gcp_project_id
+  region  = var.gcp_region
 }
 
-#Store Terraform state remotely in a GCS bucket
+# Store Terraform state remotely in a GCS bucket
 terraform {
   backend "gcs" {
-    bucket = "wikimap-tfstate-bucket" # MUST be created manually first or via a separate script
-    prefix = "prod"
+    bucket = "wikimap-tfstate-bucket"
+    prefix = "dev"
   }
 }
 
-# 2. CI/CD: Create a repository to store Docker images
+# 1. CI/CD: Create a repository to store Docker images
 resource "google_artifact_registry_repository" "backend_repo" {
-  location      = "europe-west4"
-  repository_id = "my-backend-app-repo"
+  location      = var.gcp_region
+  repository_id = var.artifact_registry_repo_id
   format        = "DOCKER"
-  description   = "Docker repository for my backend app"
+  description   = "Docker repository for the wikimap backend app"
 }
 
-# 3. BACKEND: Deploy the backend service to Cloud Run
+# 2. BACKEND: Deploy the backend service to Cloud Run
 resource "google_cloud_run_v2_service" "backend_service" {
-  name     = "my-backend-service"
-  location = "europe-west4"
+  name     = var.cloud_run_service_name
+  location = var.gcp_region
 
   template {
     containers {
-      # The image URL will be updated by the CI/CD pipeline
-      image = "europe-west4-docker.pkg.dev/your-gcp-project-id/my-backend-app-repo/my-backend-image:latest"
+      image = "${var.gcp_region}-docker.pkg.dev/${var.gcp_project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.image_name}:latest"
     }
   }
+
+  # Ensure the Artifact Registry repo is created before Cloud Run tries to pull from it
+  depends_on = [
+    google_artifact_registry_repository.backend_repo
+  ]
 }
 
 # Allow unauthenticated access to the backend service
@@ -42,16 +46,15 @@ resource "google_cloud_run_v2_service_iam_member" "allow_public" {
   member   = "allUsers"
 }
 
-
-# 4. FRONTEND: Create a GCS bucket to host the static frontend
+# 3. FRONTEND: Create a GCS bucket to host the static frontend
 resource "google_storage_bucket" "frontend_bucket" {
-  name          = "your-unique-frontend-bucket-name"
-  location      = "US"
+  name          = var.frontend_bucket_name
+  location      = "EU" # Multi-region is often better for websites
   force_destroy = true # Useful for development
 
   website {
     main_page_suffix = "index.html"
-    not_found_page   = "404.html"
+    # not_found_page   = "404.html"
   }
 }
 

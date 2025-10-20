@@ -1,0 +1,65 @@
+# .github/workflows/reusable-terraform-apply.yml
+
+name: Reusable - Apply Terraform Configuration
+
+on:
+  workflow_call:
+    inputs:
+      GCP_PROJECT_ID:
+        required: true
+        type: string
+      GCP_REGION:
+        required: true
+        type: string
+      REPOSITORY_NAME:
+        required: true
+        type: string
+      IMAGE_NAME:
+        required: true
+        type: string
+      FRONTEND_BUCKET_NAME:
+        required: true
+        type: string
+      CLOUD_RUN_SERVICE_NAME:
+        required: true
+        type: string
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+
+jobs:
+  terraform-apply-logic:
+    name: Apply Terraform
+    runs-on: ubuntu-latest
+    
+    # Set TF_VAR_ environment variables, which Terraform automatically uses
+    env:
+      TF_VAR_GCP_PROJECT_ID: ${{ inputs.GCP_PROJECT_ID }}
+      TF_VAR_GCP_REGION: ${{ inputs.GCP_REGION }}
+      TF_VAR_REPOSITORY_NAME: ${{ inputs.REPOSITORY_NAME }}
+      TF_VAR_IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+      TF_VAR_FRONTEND_BUCKET_NAME: ${{ inputs.FRONTEND_BUCKET_NAME }}
+      TF_VAR_CLOUD_RUN_SERVICE_NAME: ${{ inputs.CLOUD_RUN_SERVICE_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve

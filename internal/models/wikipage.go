@@ -10,12 +10,11 @@ type WikiPages struct {
 }
 
 type WikiPage struct {
-	PageId    string  `json:"pageid"`
-	Thumbnail []byte  `json:"thumbnail"`
-	Views     uint    `json:"views"`
-	Title     string  `json:"title"`
-	Lat       float64 `json:"lat"`
-	Lon       float64 `json:"lon"`
+	PageId string  `json:"pageid"`
+	Views  uint    `json:"views"`
+	Title  string  `json:"title"`
+	Lat    float64 `json:"lat"`
+	Lon    float64 `json:"lon"`
 }
 
 type WikiPageSearchResponse struct {

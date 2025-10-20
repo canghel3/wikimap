@@ -10,8 +10,8 @@ func init() {
 }
 
 func main() {
-	server := api.NewServer(config.Root)
-	if err := server.Run(); err != nil {
+	wikiMediaAPI := api.NewWikiMediaAPI(config.Root)
+	if err := wikiMediaAPI.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }

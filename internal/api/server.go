@@ -10,29 +10,19 @@ import (
 	"github.com/canghel3/wikimap/services"
 )
 
-type Server struct {
+type WikiMediaAPI struct {
 	mux    *http.ServeMux
 	config config.Configuration
 }
 
-func NewServer(config config.Configuration) *Server {
-	return &Server{
+func NewWikiMediaAPI(config config.Configuration) *WikiMediaAPI {
+	return &WikiMediaAPI{
 		mux:    http.NewServeMux(),
 		config: config,
 	}
 }
 
-func (s *Server) Run() error {
-
-	//static files (CSS, JS, etc.)
-	fs := http.FileServer(http.Dir(s.config.Files.Static.Root))
-	s.mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
-
-	//index page
-	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, s.config.Files.Static.Index)
-	})
-
+func (s *WikiMediaAPI) ListenAndServe() error {
 	mediaWikiService := services.GetMediaWikiAPIService()
 
 	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))

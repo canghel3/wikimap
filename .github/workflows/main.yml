@@ -1,0 +1,39 @@
+name: Main
+
+on:
+  push:
+    branches: [ main ]
+
+# Permissions are still required here for the OIDC token
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  build-backend:
+    name: Build Backend Service
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+      REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
+      GAR_LOCATION: ${{ vars.GAR_LOCATION }}
+    secrets:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    # This ensures deployment only happens after a successful build
+    needs: build-backend
+    uses: ./.github/workflows/terraform.yml
+    with:
+      # Pass values from GitHub secrets and variables to the reusable workflow's inputs
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GAR_LOCATION }}
+      REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
+      IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+      FRONTEND_BUCKET_NAME: ${{ vars.FRONTEND_BUCKET_NAME }}
+      CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+    # 'inherit' is a convenient way to pass all the caller's secrets
+    secrets: inherit

@@ -7,18 +7,12 @@
   "server" : {
     "port" : 9876
   },
-  "files" : {
-    "static" : {
-      "root" : "/frontend/dist/assets",
-      "index" : "/frontend/dist/index.html"
-    }
-  },
   "databases" : {
-    "geowiki" : {
+    "wikimap" : {
       "connection" : {
         "host" : "localhost",
-        "dbname" : "geowiki",
-        "user" : "geowiki",
+        "dbname" : "wikimap",
+        "user" : "wikimap",
         "password" : "secret",
         "port" : "5432",
         "ssl" : "disable"
