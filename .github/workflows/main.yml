@@ -29,15 +29,15 @@ jobs:
             service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
         - name: Configure Docker
-          run: gcloud auth configure-docker ${{ vars.GAR_LOCATION }}-docker.pkg.dev
+          run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
         - name: Build Docker image
           run: >
-            docker build . --tag "${{ vars.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}/${{ vars.IMAGE_NAME }}:latest"
+            docker build . --tag "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}/${{ vars.IMAGE_NAME }}:latest"
 
         - name: Push Docker image
           run: >
-            docker push "${{ vars.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}/${{ vars.IMAGE_NAME }}:latest"
+            docker push "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}/${{ vars.IMAGE_NAME }}:latest"
 
     terraform:
       name: Apply Terraform
