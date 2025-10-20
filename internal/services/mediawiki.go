@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/canghel3/wikimap/config"
-	"github.com/canghel3/wikimap/models"
+	"github.com/canghel3/wikimap/internal/config"
+	"github.com/canghel3/wikimap/internal/models"
 	"golang.org/x/time/rate"
 )
 

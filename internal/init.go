@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/canghel3/telemetry/log"
-	"github.com/canghel3/wikimap/config"
+	"github.com/canghel3/wikimap/internal/config"
 	"github.com/spf13/viper"
 )
 

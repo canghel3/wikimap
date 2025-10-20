@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/canghel3/wikimap/api"
-	"github.com/canghel3/wikimap/config"
+	"github.com/canghel3/wikimap/internal/api"
+	"github.com/canghel3/wikimap/internal/config"
 )
 
 func init() {

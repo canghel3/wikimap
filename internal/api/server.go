@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/canghel3/telemetry/log"
-	"github.com/canghel3/wikimap/config"
-	"github.com/canghel3/wikimap/services"
+	"github.com/canghel3/wikimap/internal/config"
+	"github.com/canghel3/wikimap/internal/services"
 )
 
 type WikiMediaAPI struct {
