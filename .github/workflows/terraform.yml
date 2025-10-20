@@ -3,9 +3,6 @@ name: Terraform
 on:
   workflow_call:
     inputs:
-      GCP_PROJECT_ID:
-        required: true
-        type: string
       GCP_REGION:
         required: true
         type: string
@@ -22,6 +19,8 @@ on:
         required: true
         type: string
     secrets:
+      GCP_PROJECT_ID:
+        required: true
       GCP_WORKLOAD_IDENTITY_PROVIDER:
         required: true
       GCP_SERVICE_ACCOUNT:
@@ -34,7 +33,7 @@ jobs:
     environment: ${{ github.ref_name }}
     # Set TF_VAR_ environment variables, which Terraform automatically uses
     env:
-      TF_VAR_GCP_PROJECT_ID: ${{ inputs.GCP_PROJECT_ID }}
+      TF_VAR_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       TF_VAR_GCP_REGION: ${{ inputs.GCP_REGION }}
       TF_VAR_REPOSITORY_NAME: ${{ inputs.REPOSITORY_NAME }}
       TF_VAR_IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
