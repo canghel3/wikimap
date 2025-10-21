@@ -114,14 +114,6 @@ jobs:
           working-directory: ./src
           run: echo "VITE_API_URL=${{ needs.terraform.outputs.backend_url }}" > .env.production
 
-        - name: Verify Environment File
-          run: |
-            echo "--- Verifying files in src directory ---"
-            ls -la ./src
-            echo "--- Verifying content of .env.production ---"
-            cat ./src/.env.production
-            echo "--- Verification complete ---"
-
         - name: Install Dependencies & Build Frontend
           run: |
             npm install
