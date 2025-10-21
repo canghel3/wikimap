@@ -45,7 +45,7 @@ jobs:
       environment: ${{ github.ref_name }}
       needs: build-and-push
       outputs:
-        backend_url: ${{ steps.get_url.outputs.cloud_run_url }}
+        backend_url: ${{ steps.get_url.outputs.url }}
       # Set TF_VAR_ environment variables, which Terraform automatically uses
       env:
         TF_VAR_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
