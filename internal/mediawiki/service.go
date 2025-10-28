@@ -1,4 +1,4 @@
-package services
+package mediawiki
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/canghel3/wikimap/internal/config"
-	"github.com/canghel3/wikimap/internal/models"
+	"github.com/canghel3/wikimap/internal/mediawiki/models"
 	"golang.org/x/time/rate"
 )
 
@@ -21,33 +21,33 @@ const (
 	MinimumGSLimit   = 1
 	MaximumGSLimit   = "500"
 
-	UserAgent = "GeoWiki/0.0 (cristian.anghel4@gmail.com) https://github.com/canghel3/geo-wiki"
+	UserAgent = "WikiMap/0.0 (cristian.anghel4@gmail.com) https://github.com/canghel3/wikimap"
 )
 
 var (
 	mediaWikiOnce    sync.Once
-	mediaWikiService *MediaWikiAPIService
+	mediaWikiService *Service
 )
 
-type MediaWikiAPIService struct {
+type Service struct {
 	client      *http.Client
 	url         string
 	rateLimiter *rate.Limiter
 }
 
-func GetMediaWikiAPIService() *MediaWikiAPIService {
+func GetMediaWikiService(config config.MediaWikiConfig) *Service {
 	mediaWikiOnce.Do(func() {
-		mediaWikiService = &MediaWikiAPIService{
+		mediaWikiService = &Service{
 			client:      http.DefaultClient,
-			url:         config.Root.MediaWiki.URL,
-			rateLimiter: rate.NewLimiter(rate.Limit(config.Root.MediaWiki.Rate), config.Root.MediaWiki.Burst),
+			url:         config.WikiConfig.URL,
+			rateLimiter: rate.NewLimiter(rate.Limit(config.WikiConfig.Rate), config.WikiConfig.Burst),
 		}
 	})
 
 	return mediaWikiService
 }
 
-func (mws *MediaWikiAPIService) GetViews(pageids ...string) (models.WikiPageViews, error) {
+func (mws *Service) GetViews(pageids ...string) (models.WikiPageViews, error) {
 	err := mws.rateLimiter.Wait(context.Background())
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (mws *MediaWikiAPIService) GetViews(pageids ...string) (models.WikiPageView
 	return pagesWithViews, nil
 }
 
-func (mws *MediaWikiAPIService) getViews(pages ...string) (models.WikiPageViews, error) {
+func (mws *Service) getViews(pages ...string) (models.WikiPageViews, error) {
 	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (mws *MediaWikiAPIService) getViews(pages ...string) (models.WikiPageViews,
 }
 
 // SearchWikiPages searches for wikipedia pages within a given bbox. Bbox format is of the form maxy|minx|miny|maxx
-func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
+func (mws *Service) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
 	err := mws.rateLimiter.Wait(context.Background())
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (mws *MediaWikiAPIService) SearchWikiPages(bbox string) ([]models.WikiPage,
 	}
 }
 
-func (mws *MediaWikiAPIService) GetThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
+func (mws *Service) GetThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
 	err := mws.rateLimiter.Wait(context.Background())
 	if err != nil {
 		return nil, err
@@ -205,7 +205,7 @@ func (mws *MediaWikiAPIService) GetThumbnails(width uint, pageids ...string) (mo
 	return thumbnails, nil
 }
 
-func (mws *MediaWikiAPIService) getThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
+func (mws *Service) getThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
 	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
 	if err != nil {
 		return nil, err

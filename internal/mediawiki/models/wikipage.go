@@ -36,7 +36,7 @@ type Geosearch struct {
 	Primary string  `json:"primary"`
 }
 
-type WikiPageViews map[string]uint
+type WikiPageViews map[string]uint64
 
 type WikiPageViewsResponse struct {
 	Query PagesViewsQuery `json:"query"`
@@ -47,15 +47,13 @@ type PagesViewsQuery struct {
 }
 
 type PageViews struct {
-	Views map[string]*int `json:"pageviews,omitempty"`
+	Views map[string]uint64 `json:"pageviews,omitempty"`
 }
 
-func (pv PageViews) Sum() uint {
-	var sum uint
+func (pv PageViews) Sum() uint64 {
+	var sum uint64
 	for _, views := range pv.Views {
-		if views != nil {
-			sum += uint(*views)
-		}
+		sum += views
 	}
 
 	return sum

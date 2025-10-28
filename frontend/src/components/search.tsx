@@ -32,7 +32,6 @@ const FindNearbyPages: React.FC<FindNearbyPagesProps> = ({ setMarkers, zoomBegin
         load: () => updateButtonState()
     });
 
-    //just some syntax that i found interesting: (pages: Omit<WikiPage, 'views'>[]): Promise<WikiPage[]>
     const getPageViews = async (pages: WikiPage[]): Promise<WikiPage[]> => {
         if (pages.length === 0) return [];
         try {

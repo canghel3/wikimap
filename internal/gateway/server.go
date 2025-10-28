@@ -1,4 +1,4 @@
-package api
+package gateway
 
 import (
 	"encoding/json"
@@ -7,22 +7,21 @@ import (
 
 	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
-	"github.com/canghel3/wikimap/internal/services"
 )
 
-type WikiMediaAPI struct {
+type APIGateway struct {
 	mux    *http.ServeMux
-	config config.Configuration
+	config config.GatewayConfig
 }
 
-func NewWikiMediaAPI(config config.Configuration) *WikiMediaAPI {
-	return &WikiMediaAPI{
+func NewAPIGateway(config config.GatewayConfig) *APIGateway {
+	return &APIGateway{
 		mux:    http.NewServeMux(),
 		config: config,
 	}
 }
 
-func (s *WikiMediaAPI) ListenAndServe() error {
+func (s *APIGateway) ListenAndServe() error {
 	mediaWikiService := services.GetMediaWikiAPIService()
 
 	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
@@ -32,7 +31,7 @@ func (s *WikiMediaAPI) ListenAndServe() error {
 	handler := recovery(logging(corsMiddleware(s.mux)))
 
 	// start the server
-	return http.ListenAndServe(fmt.Sprintf(":%d", s.config.Server.Port), handler)
+	return http.ListenAndServe(s.config.Port, handler)
 }
 
 func recovery(next http.Handler) http.Handler {

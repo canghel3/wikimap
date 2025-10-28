@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package mediawiki;
+
+import "google/api/annotations.proto";
+
+option go_package = "./mediawikipb";
+
+service MediaWiki {
+  rpc GetViews(GetViewsRequest) returns (GetViewsResponse) {
+    option (google.api.http) = {
+
+    };
+  }
+}
+
+message GetViewsRequest {
+  repeated string pageids = 1;
+}
+
+message GetViewsResponse {
+  map<string, uint64> page_views = 1;
+}
