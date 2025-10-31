@@ -1,22 +1,5 @@
 package models
 
-import (
-	"sync"
-)
-
-type WikiPages struct {
-	pages map[string]WikiPage
-	lock  sync.RWMutex
-}
-
-type WikiPage struct {
-	PageId string  `json:"pageid"`
-	Views  uint    `json:"views"`
-	Title  string  `json:"title"`
-	Lat    float64 `json:"lat"`
-	Lon    float64 `json:"lon"`
-}
-
 type WikiPageSearchResponse struct {
 	BatchComplete string           `json:"batchcomplete"`
 	Query         PagesSearchQuery `json:"query"`
@@ -30,9 +13,9 @@ type Geosearch struct {
 	PageID  int     `json:"pageid"`
 	NS      int     `json:"ns"`
 	Title   string  `json:"title"`
-	Lat     float64 `json:"lat"`
-	Lon     float64 `json:"lon"`
-	Dist    float64 `json:"dist"`
+	Lat     float32 `json:"lat"`
+	Lon     float32 `json:"lon"`
+	Dist    float32 `json:"dist"`
 	Primary string  `json:"primary"`
 }
 

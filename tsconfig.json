@@ -9,10 +9,12 @@
     "skipLibCheck": true,
     "moduleResolution": "node",
     "baseUrl": "./",
-    "lib": ["dom", "dom.iterable", "esnext"]
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["vite/client"]
   },
   "include": [
-    "./src"
+    "frontend/src",
+    "frontend/src/vite-env.d.ts"
   ],
   "exclude": [
     "node_modules"

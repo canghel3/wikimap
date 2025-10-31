@@ -1,4 +1,8 @@
 {
-  "port" : "9876",
-
+  "port" : ":9876",
+  "services" : {
+    "mediawiki" : {
+      "address" : "localhost:3000"
+    }
+  }
 }

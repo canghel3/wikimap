@@ -12,6 +12,7 @@ import (
 
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/internal/mediawiki/models"
+	"github.com/canghel3/wikimap/proto/mediawikipb"
 	"golang.org/x/time/rate"
 )
 
@@ -47,13 +48,14 @@ func GetMediaWikiService(config config.MediaWikiConfig) *Service {
 	return mediaWikiService
 }
 
-func (mws *Service) GetViews(pageids ...string) (models.WikiPageViews, error) {
-	err := mws.rateLimiter.Wait(context.Background())
+func (mws *Service) GetViews(ctx context.Context, pageids ...string) (*mediawikipb.GetViewsResponse, error) {
+	err := mws.rateLimiter.Wait(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	pagesWithViews := make(models.WikiPageViews)
+	pagesWithViews := new(mediawikipb.GetViewsResponse)
+	pagesWithViews.PageViews = make(models.WikiPageViews)
 
 	for i := 0; i < len(pageids); i += RequestBatchSize {
 		end := i + RequestBatchSize
@@ -67,7 +69,7 @@ func (mws *Service) GetViews(pageids ...string) (models.WikiPageViews, error) {
 		}
 
 		for k, v := range withViews {
-			pagesWithViews[k] = v
+			pagesWithViews.PageViews[k] = v
 		}
 	}
 
@@ -120,9 +122,9 @@ func (mws *Service) getViews(pages ...string) (models.WikiPageViews, error) {
 	}
 }
 
-// SearchWikiPages searches for wikipedia pages within a given bbox. Bbox format is of the form maxy|minx|miny|maxx
-func (mws *Service) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
-	err := mws.rateLimiter.Wait(context.Background())
+// GetPagesInBbox searches for wikipedia pages within a given bbox. Bbox format is of the form maxy|minx|miny|maxx
+func (mws *Service) GetPagesInBbox(ctx context.Context, bbox string) (*mediawikipb.GetPagesInBboxResponse, error) {
+	err := mws.rateLimiter.Wait(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -162,10 +164,11 @@ func (mws *Service) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
 			return nil, err
 		}
 
-		var pages []models.WikiPage
+		var pages = new(mediawikipb.GetPagesInBboxResponse)
+		pages.Pages = make([]*mediawikipb.WikiPageMetadata, 0)
 		for _, page := range searchResponse.Query.Geosearch {
-			pages = append(pages, models.WikiPage{
-				PageId: strconv.Itoa(page.PageID),
+			pages.Pages = append(pages.Pages, &mediawikipb.WikiPageMetadata{
+				Pageid: strconv.Itoa(page.PageID),
 				Title:  page.Title,
 				Lat:    page.Lat,
 				Lon:    page.Lon,
@@ -178,13 +181,14 @@ func (mws *Service) SearchWikiPages(bbox string) ([]models.WikiPage, error) {
 	}
 }
 
-func (mws *Service) GetThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
-	err := mws.rateLimiter.Wait(context.Background())
+func (mws *Service) GetThumbnails(ctx context.Context, width, height uint32, pageids ...string) (*mediawikipb.GetThumbnailsResponse, error) {
+	err := mws.rateLimiter.Wait(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	thumbnails := make(models.WikiPageThumbnails)
+	thumbnails := new(mediawikipb.GetThumbnailsResponse)
+	thumbnails.Thumbnails = make(map[string]*mediawikipb.ThumbnailData)
 
 	for i := 0; i < len(pageids); i += RequestBatchSize {
 		end := i + RequestBatchSize
@@ -198,14 +202,18 @@ func (mws *Service) GetThumbnails(width uint, pageids ...string) (models.WikiPag
 		}
 
 		for k, v := range withThumbnails {
-			thumbnails[k] = v
+			thumbnails.Thumbnails[k] = &mediawikipb.ThumbnailData{
+				Source: v.Source,
+				Width:  v.Width,
+				Height: v.Height,
+			}
 		}
 	}
 
 	return thumbnails, nil
 }
 
-func (mws *Service) getThumbnails(width uint, pageids ...string) (models.WikiPageThumbnails, error) {
+func (mws *Service) getThumbnails(width uint32, pageids ...string) (models.WikiPageThumbnails, error) {
 	request, err := http.NewRequest(http.MethodGet, mws.url, nil)
 	if err != nil {
 		return nil, err

@@ -7,34 +7,37 @@ import (
 
 	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
+	"github.com/canghel3/wikimap/internal/registry"
 )
 
 type APIGateway struct {
-	mux    *http.ServeMux
 	config config.GatewayConfig
 }
 
 func NewAPIGateway(config config.GatewayConfig) *APIGateway {
 	return &APIGateway{
-		mux:    http.NewServeMux(),
 		config: config,
 	}
 }
 
-func (s *APIGateway) ListenAndServe() error {
-	mediaWikiService := services.GetMediaWikiAPIService()
+func (gw *APIGateway) ListenAndServe() error {
+	serviceRegistry, err := registry.NewServiceRegistry(gw.config.Services)
+	if err != nil {
+		return err
+	}
 
-	s.mux.Handle("/api/v1/pages", getPagesWithinBounds(mediaWikiService))
-	s.mux.Handle("/api/v1/pages/views", getPagesViews(mediaWikiService))
-	s.mux.Handle("/api/v1/pages/thumbnails", getPagesThumbnails(mediaWikiService))
+	v1 := newApiV1(serviceRegistry)
 
-	handler := recovery(logging(corsMiddleware(s.mux)))
+	mux := http.NewServeMux()
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", v1.handler()))
+
+	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(mux)))
 
 	// start the server
-	return http.ListenAndServe(s.config.Port, handler)
+	return http.ListenAndServe(gw.config.Port, handler)
 }
 
-func recovery(next http.Handler) http.Handler {
+func recoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -47,7 +50,7 @@ func recovery(next http.Handler) http.Handler {
 	})
 }
 
-func logging(next http.Handler) http.Handler {
+func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Stdout().Info().Logf("%s | %s | %s", r.RemoteAddr, r.Method, r.URL)
 		next.ServeHTTP(w, r)
@@ -80,7 +83,7 @@ func errorResponse(w http.ResponseWriter, status int, message string, err error)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	if err := json.NewEncoder(w).Encode(map[string]string{"message": message}); err != nil {
+	if err = json.NewEncoder(w).Encode(map[string]string{"message": message}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

@@ -2,16 +2,12 @@ syntax = "proto3";
 
 package mediawiki;
 
-import "google/api/annotations.proto";
-
-option go_package = "./mediawikipb";
+option go_package = "proto/mediawikipb";
 
 service MediaWiki {
-  rpc GetViews(GetViewsRequest) returns (GetViewsResponse) {
-    option (google.api.http) = {
-
-    };
-  }
+  rpc GetViews(GetViewsRequest) returns (GetViewsResponse);
+  rpc GetThumbnails(GetThumbnailsRequest) returns (GetThumbnailsResponse);
+  rpc GetPagesInBbox(GetPagesInBboxRequest) returns (GetPagesInBboxResponse);
 }
 
 message GetViewsRequest {
@@ -20,4 +16,37 @@ message GetViewsRequest {
 
 message GetViewsResponse {
   map<string, uint64> page_views = 1;
+}
+
+message GetThumbnailsRequest {
+  uint32 width = 1;
+  uint32 height = 2;
+  repeated string pageids = 3;
+}
+
+message GetThumbnailsResponse {
+  map<string, ThumbnailData> thumbnails = 1;
+}
+
+message ThumbnailData {
+  string source = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+}
+
+message GetPagesInBboxRequest {
+  //bbox format is of the form maxy|minx|miny|maxx
+  string bbox = 1;
+}
+
+message GetPagesInBboxResponse {
+  repeated WikiPageMetadata pages = 1;
+}
+
+message WikiPageMetadata {
+  string pageid = 1;
+  uint64 views = 2;
+  string title = 3;
+  float lat = 4;
+  float lon = 5;
 }

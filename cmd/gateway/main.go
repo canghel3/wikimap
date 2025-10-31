@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/canghel3/wikimap/internal/config"
@@ -9,19 +10,28 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadDir("")
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	cfg, err := config.LoadDir(filepath.Join(wd, "config"))
 	if err != nil {
 		panic(err)
 	}
 
 	//env PORT is provided by GCP
 	port := os.Getenv("PORT")
-	if len(strings.TrimSpace(port)) == 0 {
-		//
+	if len(strings.TrimSpace(port)) > 0 {
+		if strings.HasPrefix(port, ":") {
+			cfg.Gateway.Port = port
+		} else {
+			cfg.Gateway.Port = ":" + port
+		}
 	}
 
-	gatewayAPI := gateway.NewAPIGateway()
-	if err := gatewayAPI.ListenAndServe(); err != nil {
+	gatewayAPI := gateway.NewAPIGateway(cfg.Gateway)
+	if err = gatewayAPI.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }

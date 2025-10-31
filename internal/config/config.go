@@ -46,7 +46,7 @@ func LoadDir(dir string) (*Config, error) {
 		tv.SetConfigName(configKey)
 		tv.SetConfigType(strings.TrimPrefix(fileExt, "."))
 
-		if err := tv.ReadInConfig(); err != nil {
+		if err = tv.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("failed to read config file %s: %w", fileName, err)
 		}
 

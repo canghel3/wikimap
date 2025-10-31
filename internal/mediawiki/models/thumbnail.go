@@ -16,8 +16,8 @@ type WikiPageThumbnailPage struct {
 
 type WikiPageThumbnail struct {
 	Source string `json:"source"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+	Width  uint32 `json:"width"`
+	Height uint32 `json:"height"`
 }
 
 type WikiPageThumbnails map[string]WikiPageThumbnail

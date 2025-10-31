@@ -19,10 +19,13 @@ func NewServer(config config.MediaWikiConfig) *Server {
 }
 
 func (s *Server) GetViews(ctx context.Context, request *mediawikipb.GetViewsRequest) (*mediawikipb.GetViewsResponse, error) {
-	views, err := s.service.GetViews(request.GetPageids()...)
-	if err != nil {
-		return nil, err
-	}
+	return s.service.GetViews(ctx, request.Pageids...)
+}
 
-	return translator.ViewsToProtobuf(views), nil
+func (s *Server) GetPagesInBbox(ctx context.Context, request *mediawikipb.GetPagesInBboxRequest) (*mediawikipb.GetPagesInBboxResponse, error) {
+	return s.service.GetPagesInBbox(ctx, request.Bbox)
+}
+
+func (s *Server) GetThumbnails(ctx context.Context, request *mediawikipb.GetThumbnailsRequest) (*mediawikipb.GetThumbnailsResponse, error) {
+	return s.service.GetThumbnails(ctx, request.Width, request.Height, request.Pageids...)
 }
