@@ -104,7 +104,7 @@ jobs:
             service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
         - name: Configure Frontend Environment
-          run: echo "VITE_API_URL=${{ needs.terraform.outputs.gateway_url }}" > ./frontend/.env.production && cat ./frontend/.env.production
+          run: echo "VITE_API_URL=${{ needs.terraform.outputs.backend_url }}" > ./frontend/.env.production && cat ./frontend/.env.production
 
         - name: Install Dependencies & Build Frontend
           run: |
