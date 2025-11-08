@@ -36,7 +36,6 @@ jobs:
 
         - name: Build And Push Docker Images
           run: >
-            ls -ltr &&
             docker buildx bake --push
 
     terraform:
