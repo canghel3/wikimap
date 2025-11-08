@@ -34,6 +34,8 @@ resource "google_cloud_run_v2_service" "gateway_service" {
     service_account = google_service_account.gateway_sa.email
   }
 
+  deletion_protection = false
+
   depends_on = [
     google_artifact_registry_repository.backend_repo,
     google_cloud_run_v2_service.mediawiki_service,
@@ -50,6 +52,8 @@ resource "google_cloud_run_v2_service" "mediawiki_service" {
       image = "${var.GCP_REGION}-docker.pkg.dev/${var.GCP_PROJECT_ID}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.IMAGE_NAME}-mediawiki:${var.TAG}"
     }
   }
+
+  deletion_protection = false
 
   depends_on = [
     google_artifact_registry_repository.backend_repo
