@@ -17,7 +17,7 @@ jobs:
       environment: ${{ github.ref_name }}
       env:
         REPO_URL: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}
-        IMAGE_NAME: $${{ vars.IMAGE_NAME }}
+        IMAGE_NAME: ${{ vars.IMAGE_NAME }}
         TAG: ${{ github.sha }}
 
       steps:
