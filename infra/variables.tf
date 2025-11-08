@@ -11,14 +11,14 @@ variable "REPOSITORY_NAME" {
   type        = string
 }
 
-variable "CLOUD_RUN_SERVICE_NAME" {
-  type        = string
-}
-
 variable "FRONTEND_BUCKET_NAME" {
   type        = string
 }
 
 variable "IMAGE_NAME" {
   type        = string
+}
+
+variable "TAG" {
+  type = string
 }

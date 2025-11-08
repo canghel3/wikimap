@@ -3,19 +3,22 @@ name: Main
 on:
   push:
     branches:
-      - main
       - dev
 
-# Permissions are still required here for the OIDC token
+# permissions are required here for the OIDC token
 permissions:
   contents: 'read'
   id-token: 'write'
 
 jobs:
     build-and-push:
-      name: Build and Push Docker Image
+      name: Build and Push Docker Images
       runs-on: ubuntu-latest
       environment: ${{ github.ref_name }}
+      env:
+        REPO_URL: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}
+        IMAGE_NAME: $${{ vars.IMAGE_NAME }}
+        TAG: ${{ github.sha }}
 
       steps:
         - name: Checkout code
@@ -31,13 +34,9 @@ jobs:
         - name: Configure Docker
           run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
-        - name: Build Docker image
+        - name: Build And Push Docker Images
           run: >
-            docker build . --tag "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}/${{ vars.IMAGE_NAME }}:latest"
-
-        - name: Push Docker image
-          run: >
-            docker push "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPOSITORY_NAME }}/${{ vars.IMAGE_NAME }}:latest"
+            docker buildx bake --push
 
     terraform:
       name: Apply Terraform
@@ -45,7 +44,7 @@ jobs:
       environment: ${{ github.ref_name }}
       needs: build-and-push
       outputs:
-        backend_url: ${{ steps.apply.outputs.cloud_run_url }}
+        backend_url: ${{ steps.apply.outputs.gateway_url }}
       # Set TF_VAR_ environment variables, which Terraform automatically uses
       env:
         TF_VAR_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -53,7 +52,7 @@ jobs:
         TF_VAR_REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
         TF_VAR_IMAGE_NAME: ${{ vars.IMAGE_NAME }}
         TF_VAR_FRONTEND_BUCKET_NAME: ${{ vars.FRONTEND_BUCKET_NAME }}
-        TF_VAR_CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+        TF_VAR_TAG: ${{ github.sha }}
 
       steps:
         - name: Checkout code
@@ -82,7 +81,6 @@ jobs:
           id: apply
           working-directory: ./infra
           run: terraform apply "tfplan"
-
     build-and-push-frontend:
       name: Build and Push Frontend
       runs-on: ubuntu-latest
@@ -106,7 +104,7 @@ jobs:
             service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
         - name: Configure Frontend Environment
-          run: echo "VITE_API_URL=${{ needs.terraform.outputs.backend_url }}" > .env.production
+          run: echo "VITE_API_URL=${{ needs.terraform.outputs.gateway_url }}" > .env.production
 
         - name: Install Dependencies & Build Frontend
           run: |

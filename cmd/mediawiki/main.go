@@ -3,7 +3,6 @@ package main
 import (
 	"net"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/canghel3/telemetry/log"
@@ -14,12 +13,7 @@ import (
 )
 
 func main() {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	cfg, err := config.LoadDir(filepath.Join(wd, "config"))
+	cfg, err := config.LoadDir(config.DefaultConfigDirectory)
 	if err != nil {
 		panic(err)
 	}

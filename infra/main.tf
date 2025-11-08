@@ -1,10 +1,8 @@
-# Configure the Google Provider
 provider "google" {
   project = var.GCP_PROJECT_ID
   region  = var.GCP_REGION
 }
 
-# Store Terraform state remotely in a GCS bucket
 terraform {
   backend "gcs" {
     bucket = "wikimap-tfstate-bucket"
@@ -12,7 +10,6 @@ terraform {
   }
 }
 
-# 1. CI/CD: Create a repository to store Docker images
 resource "google_artifact_registry_repository" "backend_repo" {
   location      = var.GCP_REGION
   repository_id = var.REPOSITORY_NAME
@@ -20,33 +17,68 @@ resource "google_artifact_registry_repository" "backend_repo" {
   description   = "Docker repository for the wikimap backend app"
 }
 
-# 2. BACKEND: Deploy the backend service to Cloud Run
-resource "google_cloud_run_v2_service" "backend_service" {
-  name     = var.CLOUD_RUN_SERVICE_NAME
+resource "google_cloud_run_v2_service" "gateway_service" {
+  name     = "gateway"
   location = var.GCP_REGION
 
   template {
     containers {
-      image = "${var.GCP_REGION}-docker.pkg.dev/${var.GCP_PROJECT_ID}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.IMAGE_NAME}:latest"
+      image = "${var.GCP_REGION}-docker.pkg.dev/${var.GCP_PROJECT_ID}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.IMAGE_NAME}-gateway:${var.TAG}"
+
+      env {
+        name = "GATEWAY_SERVICES_MEDIAWIKI_URL"
+        value = google_cloud_run_v2_service.mediawiki_service.uri
+      }
+    }
+
+    service_account = google_service_account.gateway_sa.email
+  }
+
+  depends_on = [
+    google_artifact_registry_repository.backend_repo,
+    google_cloud_run_v2_service.mediawiki_service,
+    google_service_account.gateway_sa
+  ]
+}
+
+resource "google_cloud_run_v2_service" "mediawiki_service" {
+  location = var.GCP_REGION
+  name     = "mediawiki"
+
+  template {
+    containers {
+      image = "${var.GCP_REGION}-docker.pkg.dev/${var.GCP_PROJECT_ID}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.IMAGE_NAME}-mediawiki:${var.TAG}"
     }
   }
 
-  # Ensure the Artifact Registry repo is created before Cloud Run tries to pull from it
   depends_on = [
     google_artifact_registry_repository.backend_repo
   ]
 }
 
-# Allow unauthenticated access to the backend service
-resource "google_cloud_run_v2_service_iam_member" "allow_public" {
-  project  = google_cloud_run_v2_service.backend_service.project
-  location = google_cloud_run_v2_service.backend_service.location
-  name     = google_cloud_run_v2_service.backend_service.name
+resource "google_service_account" "gateway_sa" {
+  account_id   = "gateway-sa"
+  display_name = "Service Account for the Gateway Cloud Run Service"
+}
+
+# allow public access to the gateway service
+resource "google_cloud_run_v2_service_iam_member" "allow_public_gateway" {
+  project  = google_cloud_run_v2_service.gateway_service.project
+  location = google_cloud_run_v2_service.gateway_service.location
+  name     = google_cloud_run_v2_service.gateway_service.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
 
-# 3. FRONTEND: Create a GCS bucket to host the static frontend
+resource "google_cloud_run_v2_service_iam_member" "allow_gateway_to_invoke_mediawiki" {
+  project  = google_cloud_run_v2_service.mediawiki_service.project
+  location = google_cloud_run_v2_service.mediawiki_service.location
+  name     = google_cloud_run_v2_service.mediawiki_service.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.gateway_sa.email}"
+}
+
+
 resource "google_storage_bucket" "frontend_bucket" {
   name          = var.FRONTEND_BUCKET_NAME
   location      = var.GCP_REGION
@@ -58,7 +90,7 @@ resource "google_storage_bucket" "frontend_bucket" {
   }
 }
 
-# Allow public read access to the frontend files
+# allow public read access to the frontend files
 resource "google_storage_bucket_iam_member" "public_access" {
   bucket = google_storage_bucket.frontend_bucket.name
   role   = "roles/storage.objectViewer"

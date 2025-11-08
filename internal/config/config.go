@@ -9,7 +9,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-const defaultConfigDirectory = "config"
+var DefaultConfigDirectory string
+
+func init() {
+	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
+	DefaultConfigDirectory = filepath.Join(wd, "config")
+}
 
 type Config struct {
 	Auth      AuthConfig      `mapstructure:"auth"`
@@ -19,11 +28,7 @@ type Config struct {
 
 func LoadDir(dir string) (*Config, error) {
 	if len(strings.TrimSpace(dir)) == 0 {
-		wd, err := os.Getwd()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get current working directory: %w", err)
-		}
-		dir = filepath.Join(wd, defaultConfigDirectory)
+		dir = DefaultConfigDirectory
 	}
 
 	dirEntries, err := os.ReadDir(dir)
@@ -32,6 +37,7 @@ func LoadDir(dir string) (*Config, error) {
 	}
 
 	v := viper.New()
+
 	for _, entry := range dirEntries {
 		if entry.IsDir() {
 			continue
@@ -45,6 +51,9 @@ func LoadDir(dir string) (*Config, error) {
 		tv.AddConfigPath(dir)
 		tv.SetConfigName(configKey)
 		tv.SetConfigType(strings.TrimPrefix(fileExt, "."))
+		tv.SetEnvPrefix(configKey)
+		tv.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		tv.AutomaticEnv()
 
 		if err = tv.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("failed to read config file %s: %w", fileName, err)

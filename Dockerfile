@@ -6,23 +6,23 @@ RUN go mod download
 COPY . .
 
 FROM compiler AS gateway-builder
-WORKDIR /gateway
-RUN CGO_ENABLED=0 GOOS=linux go build -o gateway ./cmd/gateway
+RUN CGO_ENABLED=0 GOOS=linux go build -o gateway-bin ./cmd/gateway
 
 FROM compiler AS mediawiki-builder
-WORKDIR /mediawiki
-RUN CGO_ENABLED=0 GOOS=linux go build -o mediawiki ./cmd/mediawiki
+RUN CGO_ENABLED=0 GOOS=linux go build -o mediawiki-bin ./cmd/mediawiki
 
 FROM alpine:latest AS gateway
 WORKDIR /gateway
 COPY --from=gateway-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=gateway-builder /gateway .
+COPY --from=gateway-builder /app/gateway-bin .
+COPY --from=compiler /app/config ./config
 RUN apk add --no-cache bash
-ENTRYPOINT ["./gateway"]
+ENTRYPOINT ["./gateway-bin"]
 
 FROM alpine:latest AS mediawiki
 WORKDIR /mediawiki
 COPY --from=mediawiki-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=mediawiki-builder /mediawiki .
+COPY --from=mediawiki-builder /app/mediawiki-bin .
+COPY --from=compiler /app/config ./config
 RUN apk add --no-cache bash
-ENTRYPOINT ["./mediawiki"]
+ENTRYPOINT ["./mediawiki-bin"]

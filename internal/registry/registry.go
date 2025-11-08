@@ -19,7 +19,6 @@ type ServiceRegistry struct {
 }
 
 func NewServiceRegistry(config config.ServicesConfig) (*ServiceRegistry, error) {
-	log.Stdout().Info().Log("initializing service registry")
 	mediawiki, err := newMediaWikiClient(config)
 	if err != nil {
 		return nil, err
@@ -44,7 +43,7 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 
 	mediaWikiInfo := config.Get(MediaWikiServiceName)
 	conn, err := grpc.NewClient(
-		mediaWikiInfo.Address,
+		mediaWikiInfo.Url,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err

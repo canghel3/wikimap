@@ -14,5 +14,5 @@ func (sc *ServicesConfig) Get(key string) ServiceInfo {
 }
 
 type ServiceInfo struct {
-	Address string `mapstructure:"address"`
+	Url string `mapstructure:"url"`
 }
