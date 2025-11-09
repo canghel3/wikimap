@@ -9,7 +9,7 @@ import (
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/proto/mediawikipb"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 const MediaWikiServiceName = "mediawiki"
@@ -43,17 +43,16 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 	}
 
 	mediaWikiInfo := config.Get(MediaWikiServiceName)
-
 	parsedUrl, err := url.Parse(mediaWikiInfo.Url)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Stdout().Info().Logf("parsed url host: %s", parsedUrl.Host)
+	log.Stdout().Info().Logf("parsed url host: %s:%s", parsedUrl.Host, parsedUrl.Port())
 
 	conn, err := grpc.NewClient(
-		parsedUrl.Host,
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		parsedUrl.Host+":443",
+		grpc.WithTransportCredentials(credentials.NewTLS(nil)))
 	if err != nil {
 		return nil, err
 	}
