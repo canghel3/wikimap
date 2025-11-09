@@ -44,7 +44,8 @@ jobs:
       environment: ${{ github.ref_name }}
       needs: build-and-push
       outputs:
-        gateway_url: ${{ steps.get_gateway_url.outputs.gateway_url }}
+        gateway_url: ${{ steps.get_outputs.outputs.gateway_url }}
+        frontend_base_url: ${{  steps.get_outputs.outputs.frontend_base_url }}
       # Set TF_VAR_ environment variables, which Terraform automatically uses
       env:
         TF_VAR_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -82,10 +83,12 @@ jobs:
           working-directory: ./infra
           run: terraform apply "tfplan"
 
-        - name: Get Gateway URL
-          id: get_gateway_url
+        - name: Get Outputs
+          id: get_outputs
           working-directory: ./infra
-          run: echo "gateway_url=$(terraform output -raw gateway_url)" >> $GITHUB_OUTPUT
+          run: |
+            echo "gateway_url=$(terraform output -raw gateway_url)" >> $GITHUB_OUTPUT
+            echo "frontend_base_url=$(terraform output -raw frontend_base_url)" >> $GITHUB_OUTPUT
 
     build-and-push-frontend:
       name: Build and Push Frontend
@@ -110,7 +113,10 @@ jobs:
             service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
         - name: Configure Frontend Environment
-          run: echo "VITE_API_URL=${{ needs.terraform.outputs.gateway_url }}" > ./frontend/.env.production && cat ./frontend/.env.production
+          run: |
+            echo "VITE_API_URL=${{ needs.terraform.outputs.gateway_url }}" > ./frontend/.env.production
+            echo "BASE_URL=${{ needs.terraform.outputs.frontend_base_url }}" >> ./frontend/.env.production
+            cat ./frontend/.env.production
 
         - name: Install Dependencies & Build Frontend
           run: |
