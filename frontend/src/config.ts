@@ -1,6 +1,6 @@
 const config = {
     apiUrl: import.meta.env.VITE_API_URL as string,
-    baseUrl: import.meta.env.BASE_URL as string,
+    baseUrl: import.meta.env.FE_BASE_URL as string,
 };
 
 // Validate that all required variables are present

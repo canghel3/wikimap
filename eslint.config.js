@@ -6,7 +6,6 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
     {ignores: ['dist']},
-
     {
         // Target only the Vite configuration file
         files: ['vite.config.js'],
