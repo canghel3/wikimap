@@ -115,7 +115,7 @@ jobs:
         - name: Configure Frontend Environment
           run: |
             echo "VITE_API_URL=${{ needs.terraform.outputs.gateway_url }}" > ./frontend/.env.production
-            echo "FE_BASE_URL=${{ needs.terraform.outputs.frontend_base_url }}" >> ./frontend/.env.production
+            echo "VITE_FE_BASE_URL=${{ needs.terraform.outputs.frontend_base_url }}" >> ./frontend/.env.production
             cat ./frontend/.env.production
 
         - name: Install Dependencies & Build Frontend
