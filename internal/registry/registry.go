@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/canghel3/telemetry/log"
@@ -42,8 +43,14 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 	}
 
 	mediaWikiInfo := config.Get(MediaWikiServiceName)
+
+	parsedUrl, err := url.Parse(mediaWikiInfo.Url)
+	if err != nil {
+		return nil, err
+	}
+
 	conn, err := grpc.NewClient(
-		mediaWikiInfo.Url,
+		parsedUrl.Host,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
