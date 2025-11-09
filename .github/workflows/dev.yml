@@ -89,7 +89,6 @@ jobs:
           run: |
             echo "gateway_url=$(terraform output -raw gateway_url)" >> $GITHUB_OUTPUT
             echo "frontend_base_url=$(terraform output -raw frontend_base_url)" >> $GITHUB_OUTPUT
-            echo "$(terraform output -raw mediawiki_uri)"
 
     build-and-push-frontend:
       name: Build and Push Frontend

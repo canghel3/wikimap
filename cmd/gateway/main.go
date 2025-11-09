@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/internal/gateway"
 )
@@ -29,6 +30,8 @@ func main() {
 			cfg.Gateway.Port = ":" + port
 		}
 	}
+
+	log.Stdout().Info().Logf("config: %v", *cfg)
 
 	gatewayAPI := gateway.NewAPIGateway(cfg.Gateway)
 	if err = gatewayAPI.ListenAndServe(); err != nil {
