@@ -15,14 +15,6 @@ export default [
             globals: globals.node,
             // Optional: Set ecmaVersion based on your Node version (e.g., 2022 for Node 18)
             ecmaVersion: 2022,
-        },
-        // Optional: You can explicitly set the 'node: true' environment as well
-        env: {
-          node: true,
-        },
-        // Alternative explicit fix if globals.node isn't sufficient:
-        globals: {
-          process: 'readonly'
         }
     },
     {
