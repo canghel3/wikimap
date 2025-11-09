@@ -47,6 +47,8 @@ resource "google_cloud_run_v2_service" "mediawiki_service" {
   location = var.GCP_REGION
   name     = "mediawiki"
 
+  ingress = "INGRESS_TRAFFIC_ALL"
+
   template {
     containers {
       image = "${var.GCP_REGION}-docker.pkg.dev/${var.GCP_PROJECT_ID}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.IMAGE_NAME}-mediawiki:${var.TAG}"
