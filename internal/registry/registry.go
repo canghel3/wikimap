@@ -48,10 +48,10 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 		return nil, err
 	}
 
-	log.Stdout().Info().Logf("parsed url host: %s:%s", parsedUrl.Host, parsedUrl.Port())
+	log.Stdout().Info().Logf("parsed url host: %s", parsedUrl.Host)
 
 	conn, err := grpc.NewClient(
-		parsedUrl.Host+":443",
+		parsedUrl.Host,
 		grpc.WithTransportCredentials(credentials.NewTLS(nil)))
 	if err != nil {
 		return nil, err
