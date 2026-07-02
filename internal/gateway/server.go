@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,6 +9,10 @@ import (
 	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/internal/registry"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/idtoken"
+	"google.golang.org/api/option"
 )
 
 type APIGateway struct {
@@ -31,7 +36,7 @@ func (gw *APIGateway) ListenAndServe() error {
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", v1.handler()))
 
-	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(mux)))
+	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(tokenMiddleware(mux))))
 
 	// start the server
 	return http.ListenAndServe(gw.config.Port, handler)
@@ -74,6 +79,46 @@ func corsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+func tokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+
+		// Construct the GoogleCredentials object which obtains the default configuration from your
+		// working environment.
+		credentials, err := google.FindDefaultCredentials(ctx)
+		if err != nil {
+			log.Stdout().Error().Logf("failed to find default credentials: %v", err)
+			return
+		}
+
+		var ts oauth2.TokenSource
+		if credentials != nil {
+			ts, err = idtoken.NewTokenSource(ctx, r.URL.String(), option.WithCredentials(credentials))
+			if err != nil {
+				log.Stdout().Error().Logf("failed to create token source: %v", err)
+				return
+			}
+		}
+
+		// Get the ID token.
+		// Once you've obtained the ID token, you can use it to make an authenticated call
+		// to the target audience.
+		var tk *oauth2.Token
+		if ts != nil {
+			tk, err = ts.Token()
+			if err != nil {
+				log.Stdout().Error().Logf("failed to get token: %v", err)
+			}
+		}
+
+		if tk != nil {
+			tk.SetAuthHeader(r)
+			log.Stdout().Info().Log("Generated ID token")
+		}
 		next.ServeHTTP(w, r)
 	})
 }
