@@ -48,8 +48,12 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 		return nil, err
 	}
 
+	// https://gemini.google.com/app/4a1a95fcd54bd4fc
+	// TODO: need to get auth token to use when requesting the mediawiki client
+	// https://stackoverflow.com/questions/71876783/make-grpc-call-from-go-client-with-tls-gcp-cloud-function
 	log.Stdout().Info().Logf("parsed url host: %s", parsedUrl.Host)
 
+	// http auth is not the issue, grpc call is not authenticated and fails
 	conn, err := grpc.NewClient(
 		parsedUrl.Host,
 		grpc.WithTransportCredentials(credentials.NewTLS(nil)))
