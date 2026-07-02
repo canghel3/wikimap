@@ -119,6 +119,7 @@ func tokenMiddleware(next http.Handler) http.Handler {
 			tk.SetAuthHeader(r)
 			log.Stdout().Info().Log("Generated ID token")
 		}
+		log.Stdout().Info().Logf("auth header is: %s", r.Header.Get("Authorization"))
 		next.ServeHTTP(w, r)
 	})
 }
