@@ -11,6 +11,7 @@ import (
 	"github.com/canghel3/wikimap/proto/mediawikipb"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	grpcMetadata "google.golang.org/grpc/metadata"
 )
 
@@ -72,7 +73,9 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "Authorization", "Bearer "+token.AccessToken)
 
 	//TODO: handle closing grpc conn via resource closer struct
-	conn, err := grpc.NewClient(parsedUrl.Host, grpc.WithUnaryInterceptor(authInterceptor(token.AccessToken)))
+	conn, err := grpc.NewClient(parsedUrl.Host,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(authInterceptor(token.AccessToken)))
 	if err != nil {
 		return nil, err
 	}
