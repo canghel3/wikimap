@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -29,7 +30,7 @@ func main() {
 		cfg.MediaWiki.GrpcConfig.Port = int(portInt)
 	}
 
-	listener, err := net.Listen("tcp", strconv.Itoa(cfg.MediaWiki.GrpcConfig.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.MediaWiki.GrpcConfig.Port))
 	if err != nil {
 		panic(err)
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/proto/mediawikipb"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -65,17 +66,13 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 	if err != nil {
 		return nil, fmt.Errorf("idtoken.NewTokenSource: %w", err)
 	}
-	token, err := tokenSource.Token()
-	if err != nil {
-		return nil, fmt.Errorf("TokenSource.Token: %w", err)
-	}
 
 	targetHost := fmt.Sprintf("%s:443", parsedUrl.Host)
 
 	//TODO: handle closing grpc conn via resource closer struct
 	conn, err := grpc.NewClient(targetHost,
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
-		grpc.WithChainUnaryInterceptor(authInterceptor(token.AccessToken), loggingInterceptor()),
+		grpc.WithChainUnaryInterceptor(authInterceptor(tokenSource), loggingInterceptor()),
 	)
 	if err != nil {
 		return nil, err
@@ -84,9 +81,14 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 	return mediawikipb.NewMediaWikiClient(conn), nil
 }
 
-func authInterceptor(token string) grpc.UnaryClientInterceptor {
+func authInterceptor(tokenSource oauth2.TokenSource) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		ctx = grpcMetadata.AppendToOutgoingContext(ctx, "Authorization", "Bearer "+token)
+		token, err := tokenSource.Token()
+		if err != nil {
+			return fmt.Errorf("TokenSource.Token: %w", err)
+		}
+
+		ctx = grpcMetadata.AppendToOutgoingContext(ctx, "Authorization", "Bearer "+token.AccessToken)
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
