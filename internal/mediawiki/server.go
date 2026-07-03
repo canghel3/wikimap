@@ -3,6 +3,7 @@ package mediawiki
 import (
 	"context"
 
+	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/proto/mediawikipb"
 )
@@ -23,6 +24,7 @@ func (s *Server) GetViews(ctx context.Context, request *mediawikipb.GetViewsRequ
 }
 
 func (s *Server) GetPagesInBbox(ctx context.Context, request *mediawikipb.GetPagesInBboxRequest) (*mediawikipb.GetPagesInBboxResponse, error) {
+	log.Stdout().Info().Log("inside get pages")
 	return s.service.GetPagesInBbox(ctx, request.Bbox)
 }
 
