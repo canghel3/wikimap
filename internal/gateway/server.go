@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
@@ -35,7 +34,7 @@ func (gw *APIGateway) ListenAndServe() error {
 	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(mux)))
 
 	// start the server
-	return http.ListenAndServe(strconv.Itoa(gw.config.Port), handler)
+	return http.ListenAndServe(fmt.Sprintf(":%d", gw.config.Port), handler)
 }
 
 func recoveryMiddleware(next http.Handler) http.Handler {
