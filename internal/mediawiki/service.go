@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/internal/mediawiki/models"
 	"github.com/canghel3/wikimap/proto/mediawikipb"
@@ -145,6 +146,7 @@ func (mws *Service) GetPagesInBbox(ctx context.Context, bbox string) (*mediawiki
 
 	request.URL.RawQuery = q.Encode()
 
+	log.Stdout().Info().Logf("request: %s", request.URL.String())
 	response, err := mws.client.Do(request)
 	if err != nil {
 		return nil, err
