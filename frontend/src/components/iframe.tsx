@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { WikiPage } from './types';
 
 interface IframePopupProps {
@@ -8,6 +8,7 @@ interface IframePopupProps {
 
 const IframePopup: React.FC<IframePopupProps> = ({ selectedPage, onClose }) => {
     const iframeContainerRef = useRef<HTMLDivElement | null>(null);
+    const [pageContent, setPageContent] = useState<string>("");
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -23,17 +24,41 @@ const IframePopup: React.FC<IframePopupProps> = ({ selectedPage, onClose }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [selectedPage, onClose]);
 
+    useEffect(() => {
+        if (selectedPage) {
+            // Fetch the page extract from Wikipedia's REST API
+            const apiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(selectedPage.title)}`;
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    setPageContent(data.extract_html || data.extract || "No description available.");
+                })
+                .catch(() => {
+                    setPageContent("<p>Failed to load content.</p>");
+                });
+        }
+    }, [selectedPage]);
+
     if (!selectedPage) {
         // do not render the iframe at all when there is no selected page to avoid empty src warnings
         return null;
     }
 
-    const url = `https://en.wikipedia.org/?curid=${selectedPage.pageid}`;
+    const externalUrl = `https://en.wikipedia.org/?curid=${selectedPage.pageid}`;
 
     return (
-        <div ref={iframeContainerRef} className="iframe visible">
-            <button className="close-button" onClick={onClose}>×</button>
-            <iframe src={url} title="Wikipedia Page" style={{ width: "100%", height: "100%", border: 'none' }} />
+        <div ref={iframeContainerRef} className="iframe visible" style={{ padding: '20px', overflowY: 'auto', boxSizing: 'border-box' }}>
+            <button className="close-button" onClick={onClose}> X </button>
+
+            <h2 style={{ marginTop: '30px' }}>{selectedPage.title}</h2>
+
+            <div dangerouslySetInnerHTML={{ __html: pageContent }} />
+
+            <div style={{ marginTop: '20px' }}>
+                <a href={externalUrl} target="_blank" rel="noopener noreferrer">
+                    Read full article on Wikipedia
+                </a>
+            </div>
         </div>
     );
 };
