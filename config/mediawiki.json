@@ -1,6 +1,6 @@
 {
   "grpc" : {
-    "port" : ":3000"
+    "port" : 3000
   },
   "wiki" : {
     "url": "https://en.wikipedia.org/w/api.php",

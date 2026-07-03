@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/canghel3/telemetry/log"
@@ -24,11 +25,11 @@ func main() {
 	//env PORT is provided by GCP
 	port := os.Getenv("PORT")
 	if len(strings.TrimSpace(port)) > 0 {
-		if strings.HasPrefix(port, ":") {
-			cfg.Gateway.Port = port
-		} else {
-			cfg.Gateway.Port = ":" + port
+		portInt, err := strconv.ParseInt(strings.TrimPrefix(port, ":"), 10, 64)
+		if err != nil {
+			panic(err)
 		}
+		cfg.Gateway.Port = int(portInt)
 	}
 
 	log.Stdout().Info().Logf("config: %v", *cfg)

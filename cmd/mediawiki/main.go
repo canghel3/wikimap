@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/canghel3/telemetry/log"
@@ -21,14 +22,14 @@ func main() {
 	//env PORT is provided by GCP
 	port := os.Getenv("PORT")
 	if len(strings.TrimSpace(port)) > 0 {
-		if strings.HasPrefix(port, ":") {
-			cfg.MediaWiki.GrpcConfig.Port = port
-		} else {
-			cfg.MediaWiki.GrpcConfig.Port = ":" + port
+		portInt, err := strconv.ParseInt(strings.TrimPrefix(port, ":"), 10, 64)
+		if err != nil {
+			panic(err)
 		}
+		cfg.MediaWiki.GrpcConfig.Port = int(portInt)
 	}
 
-	listener, err := net.Listen("tcp", cfg.MediaWiki.GrpcConfig.Port)
+	listener, err := net.Listen("tcp", strconv.Itoa(cfg.MediaWiki.GrpcConfig.Port))
 	if err != nil {
 		panic(err)
 	}

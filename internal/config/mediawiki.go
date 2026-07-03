@@ -12,5 +12,5 @@ type WikiConfig struct {
 }
 
 type GrpcConfig struct {
-	Port string `mapstructure:"port"`
+	Port int `mapstructure:"port"`
 }

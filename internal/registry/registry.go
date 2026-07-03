@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/url"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"github.com/canghel3/wikimap/proto/mediawikipb"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	grpcMetadata "google.golang.org/grpc/metadata"
 )
 
@@ -69,11 +70,13 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 		return nil, fmt.Errorf("TokenSource.Token: %w", err)
 	}
 
+	targetHost := fmt.Sprintf("%s:443", parsedUrl.Host)
+
 	//TODO: handle closing grpc conn via resource closer struct
-	conn, err := grpc.NewClient(parsedUrl.Host,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(authInterceptor(token.AccessToken)),
-		grpc.WithUnaryInterceptor(loggingInterceptor()))
+	conn, err := grpc.NewClient(targetHost,
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
+		grpc.WithChainUnaryInterceptor(authInterceptor(token.AccessToken), loggingInterceptor()),
+	)
 	if err != nil {
 		return nil, err
 	}
