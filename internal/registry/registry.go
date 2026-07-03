@@ -69,9 +69,6 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 		return nil, fmt.Errorf("TokenSource.Token: %w", err)
 	}
 
-	// Add token to gRPC Request.
-	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "Authorization", "Bearer "+token.AccessToken)
-
 	//TODO: handle closing grpc conn via resource closer struct
 	conn, err := grpc.NewClient(parsedUrl.Host,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -85,8 +82,8 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 
 func authInterceptor(token string) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "bearer "+token)
-		return nil
+		ctx = grpcMetadata.AppendToOutgoingContext(ctx, "Authorization", "Bearer "+token)
+		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
 
