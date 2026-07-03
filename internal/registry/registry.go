@@ -87,26 +87,26 @@ func authInterceptor(token string) grpc.UnaryClientInterceptor {
 	}
 }
 
-func pingRequestWithAuth(conn *grpc.ClientConn, p *pb.Request, audience string) (*pb.Response, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Create an identity token.
-	// With a global TokenSource tokens would be reused and auto-refreshed at need.
-	// A given TokenSource is specific to the audience.
-	tokenSource, err := idtoken.NewTokenSource(ctx, audience)
-	if err != nil {
-		return nil, fmt.Errorf("idtoken.NewTokenSource: %w", err)
-	}
-	token, err := tokenSource.Token()
-	if err != nil {
-		return nil, fmt.Errorf("TokenSource.Token: %w", err)
-	}
-
-	// Add token to gRPC Request.
-	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token.AccessToken)
-
-	// Send the request.
-	client := pb.NewPingServiceClient(conn)
-	return client.Send(ctx, p)
-}
+//func pingRequestWithAuth(conn *grpc.ClientConn, p *pb.Request, audience string) (*pb.Response, error) {
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	// Create an identity token.
+//	// With a global TokenSource tokens would be reused and auto-refreshed at need.
+//	// A given TokenSource is specific to the audience.
+//	tokenSource, err := idtoken.NewTokenSource(ctx, audience)
+//	if err != nil {
+//		return nil, fmt.Errorf("idtoken.NewTokenSource: %w", err)
+//	}
+//	token, err := tokenSource.Token()
+//	if err != nil {
+//		return nil, fmt.Errorf("TokenSource.Token: %w", err)
+//	}
+//
+//	// Add token to gRPC Request.
+//	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token.AccessToken)
+//
+//	// Send the request.
+//	client := pb.NewPingServiceClient(conn)
+//	return client.Send(ctx, p)
+//}
