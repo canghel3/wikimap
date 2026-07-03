@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -8,13 +9,15 @@ import (
 	"github.com/canghel3/telemetry/log"
 	"github.com/canghel3/wikimap/internal/config"
 	"github.com/canghel3/wikimap/proto/mediawikipb"
+	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	grpcMetadata "google.golang.org/grpc/metadata"
 )
 
 const MediaWikiServiceName = "mediawiki"
 const defaultTimeout = 5 * time.Second
 
+// ServiceRegistry holds all available client clients for each microservice.
 type ServiceRegistry struct {
 	mediawiki mediawikipb.MediaWikiClient
 }
@@ -48,18 +51,62 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 		return nil, err
 	}
 
-	// https://gemini.google.com/app/4a1a95fcd54bd4fc
-	// TODO: need to get auth token to use when requesting the mediawiki client
-	// https://stackoverflow.com/questions/71876783/make-grpc-call-from-go-client-with-tls-gcp-cloud-function
 	log.Stdout().Info().Logf("parsed url host: %s", parsedUrl.Host)
 
-	// http auth is not the issue, grpc call is not authenticated and fails
-	conn, err := grpc.NewClient(
-		parsedUrl.Host,
-		grpc.WithTransportCredentials(credentials.NewTLS(nil)))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Create an identity token.
+	// With a global TokenSource tokens would be reused and auto-refreshed at need.
+	// A given TokenSource is specific to the audience.
+	tokenSource, err := idtoken.NewTokenSource(ctx, parsedUrl.String())
+	if err != nil {
+		return nil, fmt.Errorf("idtoken.NewTokenSource: %w", err)
+	}
+	token, err := tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("TokenSource.Token: %w", err)
+	}
+
+	// Add token to gRPC Request.
+	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "Authorization", "Bearer "+token.AccessToken)
+
+	//TODO: handle closing grpc conn via resource closer struct
+	conn, err := grpc.NewClient(parsedUrl.Host, grpc.WithUnaryInterceptor(authInterceptor(token.AccessToken)))
 	if err != nil {
 		return nil, err
 	}
 
 	return mediawikipb.NewMediaWikiClient(conn), nil
+}
+
+func authInterceptor(token string) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "bearer "+token)
+		return nil
+	}
+}
+
+func pingRequestWithAuth(conn *grpc.ClientConn, p *pb.Request, audience string) (*pb.Response, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Create an identity token.
+	// With a global TokenSource tokens would be reused and auto-refreshed at need.
+	// A given TokenSource is specific to the audience.
+	tokenSource, err := idtoken.NewTokenSource(ctx, audience)
+	if err != nil {
+		return nil, fmt.Errorf("idtoken.NewTokenSource: %w", err)
+	}
+	token, err := tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("TokenSource.Token: %w", err)
+	}
+
+	// Add token to gRPC Request.
+	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token.AccessToken)
+
+	// Send the request.
+	client := pb.NewPingServiceClient(conn)
+	return client.Send(ctx, p)
 }
