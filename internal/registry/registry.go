@@ -72,7 +72,8 @@ func newMediaWikiClient(config config.ServicesConfig) (mediawikipb.MediaWikiClie
 	//TODO: handle closing grpc conn via resource closer struct
 	conn, err := grpc.NewClient(parsedUrl.Host,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(authInterceptor(token.AccessToken)))
+		grpc.WithUnaryInterceptor(authInterceptor(token.AccessToken)),
+		grpc.WithUnaryInterceptor(loggingInterceptor()))
 	if err != nil {
 		return nil, err
 	}
@@ -87,26 +88,9 @@ func authInterceptor(token string) grpc.UnaryClientInterceptor {
 	}
 }
 
-//func pingRequestWithAuth(conn *grpc.ClientConn, p *pb.Request, audience string) (*pb.Response, error) {
-//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-//	defer cancel()
-//
-//	// Create an identity token.
-//	// With a global TokenSource tokens would be reused and auto-refreshed at need.
-//	// A given TokenSource is specific to the audience.
-//	tokenSource, err := idtoken.NewTokenSource(ctx, audience)
-//	if err != nil {
-//		return nil, fmt.Errorf("idtoken.NewTokenSource: %w", err)
-//	}
-//	token, err := tokenSource.Token()
-//	if err != nil {
-//		return nil, fmt.Errorf("TokenSource.Token: %w", err)
-//	}
-//
-//	// Add token to gRPC Request.
-//	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token.AccessToken)
-//
-//	// Send the request.
-//	client := pb.NewPingServiceClient(conn)
-//	return client.Send(ctx, p)
-//}
+func loggingInterceptor() grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		log.Stdout().Info().Logf("%s | %v | %v", method, req, reply)
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
+}
